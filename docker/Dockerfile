@@ -4,6 +4,7 @@ ARG SVC_NAME
 WORKDIR /go/src/github.com/mainflux/mainflux
 COPY . .
 RUN apk update \
+    && apk add make  git \
     && make $SVC_NAME \
     && mv build/mainflux-$SVC_NAME /exe
 
