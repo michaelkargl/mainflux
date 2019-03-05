@@ -87,7 +87,7 @@ nats.subscribe('channel.*', {'queue':'mqtts'}, function (msg) {
         packet = {
             cmd: 'publish',
             qos: 2,
-            topic: 'channels/' + m.channel + '/messages',
+            topic: 'channels/' + m.channel + '/messages' + m.subtopic,
             payload: m.payload,
             retain: false
         };
@@ -99,7 +99,7 @@ nats.subscribe('channel.*', {'queue':'mqtts'}, function (msg) {
 aedes.authorizePublish = function (client, packet, publish) {
     // Topics are in the form `channels/<channel_id>/messages`
     // Subtopic's are in the form `channels/<channel_id>/messages/<subtopic>`
-    var channel = /^channels\/(.+?)\/messages\/?.*$/.exec(packet.topic);
+    var channel = /^channels\/(.+?)\/messages\/(.*$)/.exec(packet.topic);
     if (!channel) {
         logger.warn('unknown topic');
         publish(4); // Bad username or password
@@ -114,6 +114,7 @@ aedes.authorizePublish = function (client, packet, publish) {
         baseLength = 3, // First 3 elements which represents the base part of topic.
         elements = packet.topic.split('/').slice(baseLength),
         baseTopic = 'channel.' + channelId;
+        subTopic = channel[2];
     // Remove empty elements
     for (var i = 0; i < elements.length; i++) {
       if (elements[i] === '') {
@@ -131,6 +132,7 @@ aedes.authorizePublish = function (client, packet, publish) {
                     publisher: client.thingId,
                     channel: channelId,
                     protocol: 'mqtt',
+                    subtopic: subTopic,
                     payload: packet.payload
                 });
                 nats.publish(channelTopic, rawMsg);
