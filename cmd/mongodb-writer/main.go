@@ -31,7 +31,7 @@ const (
 
 	defNatsURL  = nats.DefaultURL
 	defLogLevel = "error"
-	defPort     = "8180"
+	defPort     = "9190"
 	defDBName   = "mainflux"
 	defDBHost   = "localhost"
 	defDBPort   = "27017"
@@ -55,6 +55,7 @@ type config struct {
 
 func main() {
 	cfg := loadConfigs()
+	fmt.Println("config:" + cfg.Port)
 	logger, err := logger.New(os.Stdout, cfg.LogLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -65,6 +66,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer nc.Close()
+
+	fmt.Println("connecting to the database")
 
 	client, err := mongo.Connect(context.Background(), fmt.Sprintf("mongodb://%s:%s", cfg.DBHost, cfg.DBPort), nil)
 	if err != nil {

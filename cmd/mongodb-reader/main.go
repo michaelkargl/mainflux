@@ -110,6 +110,7 @@ func loadConfigs() config {
 
 func connectToMongoDB(host, port, name string, logger logger.Logger) *mongo.Database {
 	client, err := mongo.Connect(context.Background(), fmt.Sprintf("mongodb://%s:%s", host, port), nil)
+	fmt.Println("connecting to the dataabase")
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to database: %s", err))
 		os.Exit(1)

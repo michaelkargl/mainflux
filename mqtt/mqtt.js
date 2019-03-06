@@ -83,6 +83,7 @@ function startMqtt() {
 nats.subscribe('channel.*', {'queue':'mqtts'}, function (msg) {
     var m = message.RawMessage.decode(Buffer.from(msg)),
         packet;
+    logger.error("incoming : %s", 'channels/' + m.channel + '/messages' + m.subtopic );
     if (m && m.protocol !== 'mqtt') {
         packet = {
             cmd: 'publish',
@@ -99,7 +100,7 @@ nats.subscribe('channel.*', {'queue':'mqtts'}, function (msg) {
 aedes.authorizePublish = function (client, packet, publish) {
     // Topics are in the form `channels/<channel_id>/messages`
     // Subtopic's are in the form `channels/<channel_id>/messages/<subtopic>`
-    var channel = /^channels\/(.+?)\/messages\/?(.*)$/.exec(packet.topic);
+    var channel = /^channels\/(.+?)\/messages\/?.*$/.exec(packet.topic);
     
     if (!channel) {
         logger.warn('unknown topic');
@@ -118,15 +119,18 @@ aedes.authorizePublish = function (client, packet, publish) {
         baseTopic = 'channel.' + channelId,
         subTopic = "";
 
-    if ( channel.length > 2)
-         subTopic = channel[2];
-    
+
          // Remove empty elements
     for (var i = 0; i < elements.length; i++) {
       if (elements[i] === '') {
         elements.pop(i)
       }
     }
+    
+    logger.error("ELE:" + elements.join('.'))
+    logger.error("BASE TOPIC:" + baseTopic)
+    subTopic = elements.join('.');
+
     var channelTopic = elements.length ? baseTopic + '.' + elements.join('.') : baseTopic,
 
         onAuthorize = function (err, res) {

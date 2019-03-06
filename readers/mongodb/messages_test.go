@@ -38,6 +38,7 @@ var (
 	addr string
 	msg  = mainflux.Message{
 		Channel:   chanID,
+		Subtopic:  "sub.topic",
 		Publisher: "1",
 		Protocol:  "mqtt",
 	}

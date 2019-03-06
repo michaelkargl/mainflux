@@ -41,6 +41,7 @@ var (
 
 	msg = mainflux.Message{
 		Channel:    "45",
+		Subtopic:   "sub/topic",
 		Publisher:  "2580",
 		Protocol:   "http",
 		Name:       "test name",

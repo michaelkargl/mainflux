@@ -131,10 +131,11 @@ func authorize(r *http.Request) (subscription, error) {
 }
 
 type subscription struct {
-	pubID   string
-	chanID  string
-	conn    *websocket.Conn
-	channel *ws.Channel
+	pubID    string
+	chanID   string
+	subtopic string
+	conn     *websocket.Conn
+	channel  *ws.Channel
 }
 
 func (sub subscription) broadcast(svc ws.Service) {
@@ -150,6 +151,7 @@ func (sub subscription) broadcast(svc ws.Service) {
 		}
 		msg := mainflux.RawMessage{
 			Channel:   sub.chanID,
+			Subtopic:  sub.subtopic,
 			Publisher: sub.pubID,
 			Protocol:  protocol,
 			Payload:   payload,

@@ -28,6 +28,7 @@ type mongoRepository struct {
 // Message struct is used as a MongoDB representation of Mainflux message.
 type message struct {
 	Channel     string   `bson:"channel,omitempty"`
+	Subtopic    string   `bson:"subtopic,omitempty"`
 	Publisher   string   `bson:"publisher,omitempty"`
 	Protocol    string   `bson:"protocol,omitempty"`
 	Name        string   `bson:"name,omitempty"`
@@ -67,6 +68,7 @@ func (repo mongoRepository) ReadAll(chanID string, offset, limit uint64) []mainf
 
 		msg := mainflux.Message{
 			Channel:    m.Channel,
+			Subtopic:   m.Subtopic,
 			Publisher:  m.Publisher,
 			Protocol:   m.Protocol,
 			Name:       m.Name,

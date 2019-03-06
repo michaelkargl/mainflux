@@ -9,6 +9,7 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mongodb/mongo-go-driver/mongo"
 
@@ -27,6 +28,7 @@ type mongoRepo struct {
 // Message struct is used as a MongoDB representation of Mainflux message.
 type message struct {
 	Channel     string   `bson:"channel,omitempty"`
+	Subtopic    string   `bson:"subtopic,omitempty"`
 	Publisher   string   `bson:"publisher,omitempty"`
 	Protocol    string   `bson:"protocol,omitempty"`
 	Name        string   `bson:"name,omitempty"`
@@ -48,8 +50,11 @@ func New(db *mongo.Database) writers.MessageRepository {
 
 func (repo *mongoRepo) Save(msg mainflux.Message) error {
 	coll := repo.db.Collection(collectionName)
+	fmt.Println("MONGO MSGF: " + msg.GetChannel() + msg.GetSubtopic())
+
 	m := message{
 		Channel:    msg.Channel,
+		Subtopic:   msg.Subtopic,
 		Publisher:  msg.Publisher,
 		Protocol:   msg.Protocol,
 		Name:       msg.Name,

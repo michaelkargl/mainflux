@@ -24,6 +24,7 @@ var (
 	addr = "localhost"
 	msg  = mainflux.Message{
 		Channel:   "1",
+		Subtopic:  "sub/topic",
 		Publisher: "1",
 		Protocol:  "mqtt",
 	}

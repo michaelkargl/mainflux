@@ -22,11 +22,13 @@ import (
 const (
 	chanID   = "1"
 	pubID    = "1"
+	subtopic = "sub.topic"
 	protocol = "ws"
 )
 
 var msg = mainflux.RawMessage{
 	Channel:   chanID,
+	Subtopic:  subtopic,
 	Publisher: pubID,
 	Protocol:  protocol,
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),

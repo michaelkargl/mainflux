@@ -55,6 +55,7 @@ func (ps pubsub) handleMsg(m *nats.Msg) {
 
 func (ps pubsub) publish(msg mainflux.RawMessage) error {
 	output := mainflux.OutputSenML
+	ps.logger.Error(fmt.Sprintf("rawmsg subtopic: %s", msg.GetSubtopic()))
 	normalized, err := ps.svc.Normalize(msg)
 	if err != nil {
 		switch ct := msg.ContentType; ct {

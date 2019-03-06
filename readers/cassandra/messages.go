@@ -25,7 +25,7 @@ func New(session *gocql.Session) readers.MessageRepository {
 }
 
 func (cr cassandraRepository) ReadAll(chanID string, offset, limit uint64) []mainflux.Message {
-	cql := `SELECT channel, publisher, protocol, name, unit,
+	cql := `SELECT channel, subtopic, publisher, protocol, name, unit,
 			value, string_value, bool_value, data_value, value_sum, time,
 			update_time, link FROM messages WHERE channel = ? LIMIT ?
 			ALLOW FILTERING`
@@ -47,7 +47,7 @@ func (cr cassandraRepository) ReadAll(chanID string, offset, limit uint64) []mai
 	page := []mainflux.Message{}
 	for scanner.Next() {
 		var msg mainflux.Message
-		scanner.Scan(&msg.Channel, &msg.Publisher, &msg.Protocol,
+		scanner.Scan(&msg.Channel, &msg.Subtopic, &msg.Publisher, &msg.Protocol,
 			&msg.Name, &msg.Unit, &floatVal, &strVal, &boolVal,
 			&dataVal, &valueSum, &msg.Time, &msg.UpdateTime, &msg.Link)
 
