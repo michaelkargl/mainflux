@@ -4,8 +4,10 @@
 package mainflux
 
 import (
+	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
 	io "io"
 	math "math"
 )
@@ -244,6 +246,175 @@ var fileDescriptor_41f4a519b878ee3b = []byte{
 	0xe3, 0x85, 0x47, 0x72, 0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0xce, 0x78, 0x2c, 0xc7, 0x90, 0xc4, 0x06,
 	0x0e, 0x78, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xec, 0xdf, 0x28, 0xda, 0x8a, 0x01, 0x00,
 	0x00,
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// ThingsServiceClient is the client API for ThingsService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ThingsServiceClient interface {
+	CanAccess(ctx context.Context, in *AccessReq, opts ...grpc.CallOption) (*ThingID, error)
+	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*ThingID, error)
+}
+
+type thingsServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewThingsServiceClient(cc *grpc.ClientConn) ThingsServiceClient {
+	return &thingsServiceClient{cc}
+}
+
+func (c *thingsServiceClient) CanAccess(ctx context.Context, in *AccessReq, opts ...grpc.CallOption) (*ThingID, error) {
+	out := new(ThingID)
+	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/CanAccess", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *thingsServiceClient) Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*ThingID, error) {
+	out := new(ThingID)
+	err := c.cc.Invoke(ctx, "/mainflux.ThingsService/Identify", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ThingsServiceServer is the server API for ThingsService service.
+type ThingsServiceServer interface {
+	CanAccess(context.Context, *AccessReq) (*ThingID, error)
+	Identify(context.Context, *Token) (*ThingID, error)
+}
+
+func RegisterThingsServiceServer(s *grpc.Server, srv ThingsServiceServer) {
+	s.RegisterService(&_ThingsService_serviceDesc, srv)
+}
+
+func _ThingsService_CanAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccessReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ThingsServiceServer).CanAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/mainflux.ThingsService/CanAccess",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ThingsServiceServer).CanAccess(ctx, req.(*AccessReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ThingsService_Identify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Token)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ThingsServiceServer).Identify(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/mainflux.ThingsService/Identify",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ThingsServiceServer).Identify(ctx, req.(*Token))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _ThingsService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "mainflux.ThingsService",
+	HandlerType: (*ThingsServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CanAccess",
+			Handler:    _ThingsService_CanAccess_Handler,
+		},
+		{
+			MethodName: "Identify",
+			Handler:    _ThingsService_Identify_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal.proto",
+}
+
+// UsersServiceClient is the client API for UsersService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type UsersServiceClient interface {
+	Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*UserID, error)
+}
+
+type usersServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewUsersServiceClient(cc *grpc.ClientConn) UsersServiceClient {
+	return &usersServiceClient{cc}
+}
+
+func (c *usersServiceClient) Identify(ctx context.Context, in *Token, opts ...grpc.CallOption) (*UserID, error) {
+	out := new(UserID)
+	err := c.cc.Invoke(ctx, "/mainflux.UsersService/Identify", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UsersServiceServer is the server API for UsersService service.
+type UsersServiceServer interface {
+	Identify(context.Context, *Token) (*UserID, error)
+}
+
+func RegisterUsersServiceServer(s *grpc.Server, srv UsersServiceServer) {
+	s.RegisterService(&_UsersService_serviceDesc, srv)
+}
+
+func _UsersService_Identify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Token)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).Identify(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/mainflux.UsersService/Identify",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).Identify(ctx, req.(*Token))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _UsersService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "mainflux.UsersService",
+	HandlerType: (*UsersServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Identify",
+			Handler:    _UsersService_Identify_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal.proto",
 }
 
 func (m *AccessReq) Marshal() (dAtA []byte, err error) {
