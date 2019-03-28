@@ -7,10 +7,7 @@
 
 var http = require('http'),
     net = require('net'),
-    protobuf = require('protocol-buffers'),
-    websocket = require('websocket-stream'),
-    grpc = require('grpc'),
-    fs = require('fs'),
+   
     bunyan = require('bunyan'),
     logging = require('aedes-logging');
 
@@ -31,9 +28,6 @@ var config = {
         schema_dir: process.argv[2] || '.',
     },
     logger = bunyan.createLogger({name: "mqtt", level: config.log_level}),
-    message = protobuf(fs.readFileSync(config.schema_dir + '/message.proto')),
-    thingsSchema = grpc.load(config.schema_dir + "/internal.proto").mainflux,
-    nats = require('nats').connect(config.nats_url),
     aedesRedis = require('aedes-persistence-redis')({
         port: config.redis_port,
         host: config.redis_host,
@@ -51,18 +45,9 @@ var config = {
         persistence: aedesRedis,
         concurrency: config.concurrency
     }),
-    things = (function() {
-        var certs;
-        if (config.client_tls) {
-            certs = grpc.credentials.createSsl(config.ca_certs);
-        } else {
-            certs = grpc.credentials.createInsecure();
-        }
-        return new thingsSchema.ThingsService(config.auth_url, certs);
-    })(),
+
     servers = [
         startMqtt(),
-        startWs()
     ];
 
 logging({
@@ -73,35 +58,12 @@ logging({
 
 logger.level(config.log_level);
 
-// MQTT over WebSocket
-function startWs() {
-    var server = http.createServer();
-    websocket.createServer({server: server}, aedes.handle);
-    server.listen(config.ws_port);
-    return server;
-}
 
 function startMqtt() {
     return net.createServer(aedes.handle).listen(config.mqtt_port);
 }
 
-nats.subscribe('channel.>', {'queue':'mqtts'}, function (msg) {
-    var m = message.RawMessage.decode(Buffer.from(msg)),
-        packet, subtopic;
-    if (m && m.protocol !== 'mqtt') {
-        subtopic = m.subtopic !== '' ? '/' + m.subtopic.replace(/\./g, '/') : '';
 
-        packet = {
-            cmd: 'publish',
-            qos: 2,
-            topic: 'channels/' + m.channel + '/messages' + subtopic,
-            payload: m.payload,
-            retain: false
-        };
-
-        aedes.publish(packet);
-    }
-});
 
 function parseTopic(topic) {
     // Topics are in the form `channels/<channel_id>/messages`
@@ -110,99 +72,23 @@ function parseTopic(topic) {
 }
 
 aedes.authorizePublish = function (client, packet, publish) {
-    var channel = parseTopic(packet.topic);
-    if (!channel) {
-        logger.warn('unknown topic');
-        publish(4); // Bad username or password
-        return;
-    }
-    var channelId = channel[1],
-        accessReq = {
-            token: client.password,
-            chanID: channelId
-        },
-        // Parse unlimited subtopics
-        baseLength = 3, // First 3 elements which represents the base part of topic.
-        isEmpty = function(value) { 
-            return value !== ''; 
-        },
-        elements = packet.topic.split('/').slice(baseLength).join('.').split('.').filter(isEmpty),
-        baseTopic = 'channel.' + channelId;
-    // Remove empty elements
-    for (var i = 0; i < elements.length; i++) {
-        if (elements[i].length > 1 && (elements[i].includes('*') || elements[i].includes('>'))) {
-            logger.warn('invalid subtopic');
-            publish(4);
-            return;
-        }
-    }
-    var channelTopic = elements.length ? baseTopic + '.' + elements.join('.') : baseTopic,
-        onAuthorize = function (err, res) {
-            var rawMsg;
-            if (!err) {
-                logger.info('authorized publish');
 
-                rawMsg = message.RawMessage.encode({
-                    publisher: client.thingId,
-                    channel: channelId,
-                    subtopic: elements.join('.'),
-                    protocol: 'mqtt',
-                    payload: packet.payload
-                });
-                nats.publish(channelTopic, rawMsg);
+    console.log("authorizePublish");
+    publish(0);
 
-                publish(0);
-            } else {
-                logger.warn("unauthorized publish: %s", err.message);
-                publish(4); // Bad username or password
-            }
-        };
-
-    things.CanAccess(accessReq, onAuthorize);
 };
 
 
 aedes.authorizeSubscribe = function (client, packet, subscribe) {
-    var channel = parseTopic(packet.topic);
-    if (!channel) {
-        logger.warn('unknown topic');
-        subscribe(4, packet); // Bad username or password
-        return;
-    }
-    var channelId = channel[1],
-        accessReq = {
-            token: client.password,
-            chanID: channelId
-        },
-        onAuthorize = function (err, res) {
-            if (!err) {
-                logger.info('authorized subscribe');
-                subscribe(null, packet);
-            } else {
-                logger.warn('unauthorized subscribe: %s', err);
-                subscribe(4, packet); // Bad username or password
-            }
-        };
 
-    things.canAccess(accessReq, onAuthorize);
+    console.log("authorizeSubscribe");
+    subscribe(null, packet);
+
 };
 
 aedes.authenticate = function (client, username, password, acknowledge) {
-    var pass = (password || "").toString(),
-        identity = {value: pass},
-        onIdentify = function(err, res) {
-            if (!err) {
-                client.thingId = res.value.toString() || "";
-                client.id = client.id || client.thingId;
-                client.password = pass;
-                acknowledge(null, true);
-            } else {
-                logger.warn('failed to authenticate client with key %s', pass);
-                acknowledge(err, false);
-            }
-        };
-
-    things.identify(identity, onIdentify);
+    console.log("authenticate");
+    acknowledge(null, true);
 };
 
 aedes.on('clientDisconnect', function (client) {
