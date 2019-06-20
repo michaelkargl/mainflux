@@ -116,6 +116,7 @@ func (c Client) Endpoint() endpoint.Endpoint {
 			ctx, c.method, req, grpcReply, grpc.Header(&header),
 			grpc.Trailer(&trailer),
 		); err != nil {
+			fmt.Println(fmt.Sprintf("error %s", err))
 			return nil, err
 		}
 
@@ -125,8 +126,12 @@ func (c Client) Endpoint() endpoint.Endpoint {
 
 		response, err = c.dec(ctx, grpcReply)
 		if err != nil {
+			fmt.Println(fmt.Sprintf("error %s", err))
 			return nil, err
 		}
+		fmt.Println("response:")
+		fmt.Println(response)
+
 		return response, nil
 	}
 }
