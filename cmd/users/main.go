@@ -79,6 +79,7 @@ type config struct {
 func main() {
 	cfg := loadConfig()
 
+	fmt.Println("hellP+ cfg.logLevel" + cfg.logLevel)
 	logger, err := logger.New(os.Stdout, cfg.logLevel)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -99,7 +100,7 @@ func main() {
 	}()
 
 	err = <-errs
-	logger.Error(fmt.Sprintf("Users service terminated: %s", err))
+	logger.Error(fmt.Sprintf("Users service terminateasd: %s", err))
 }
 
 func loadConfig() config {
