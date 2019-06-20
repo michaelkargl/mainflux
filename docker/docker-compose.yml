@@ -158,6 +158,8 @@ services:
       - 3000:3000
     networks:
       - mainflux-base-net
+    environment:
+      - UI_PORT=3000
 
   ws-adapter:
     image: mainflux/ws:latest

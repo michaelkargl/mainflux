@@ -21,4 +21,8 @@ COPY --from=builder /app/index.html /usr/share/nginx/html
 COPY --from=builder /app/main.js /usr/share/nginx/html
 COPY --from=builder /app/css/mainflux.css /usr/share/nginx/html/css/
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+COPY docker/entrypoint.sh /entrypoint.sh
 COPY src/Websocket.js /usr/share/nginx/html/src/
+
+ENTRYPOINT ["/entrypoint.sh"]
