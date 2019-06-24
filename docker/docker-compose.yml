@@ -39,7 +39,7 @@ services:
     networks:
       - mainflux-base-net
     environment:
-      UI_PORT: 3000
+      - UI_PORT
     command: /entrypoint.sh
 
   nats:
@@ -155,11 +155,11 @@ services:
     container_name: mainflux-ui
     restart: on-failure
     ports:
-      - 3000:3000
+      - ${UI_PORT}:${UI_PORT}
     networks:
       - mainflux-base-net
     environment:
-      UI_PORT: 3000
+      - UI_PORT
 
   ws-adapter:
     image: mainflux/ws:latest
