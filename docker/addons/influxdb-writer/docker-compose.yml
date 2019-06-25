@@ -63,7 +63,7 @@ services:
       - influxdb
     restart: on-failure
     ports:
-      - ${MF_INFLUX_WRITER_GRAFANA_PORT}:${MF_INFLUX_WRITER_GRAFANA_PORT}
+      - ${MF_INFLUX_WRITER_GRAFANA_PORT}:${MF_GRAFANA_PORT}
     networks:
       - docker_mainflux-base-net
     volumes:
