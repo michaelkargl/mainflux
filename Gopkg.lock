@@ -21,6 +21,14 @@
   version = "v0.3.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:7c6cab8f61be116ca94a3c38e9b83fd924618c638f5ff590380b045c9d2d3c22"
+  name = "github.com/GaryBoone/GoStats"
+  packages = ["stats"]
+  pruneopts = "UT"
+  revision = "1993eafbef57be29ee8f5eb9d26a22f20ff3c207"
+
+[[projects]]
   digest = "1:bf42be3cb1519bf8018dfd99720b1005ee028d947124cab3ccf965da59381df6"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
@@ -799,6 +807,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/BurntSushi/toml",
+    "github.com/GaryBoone/GoStats/stats",
     "github.com/cisco/senml",
     "github.com/dgrijalva/jwt-go",
     "github.com/docker/docker/pkg/namesgenerator",
