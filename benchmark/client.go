@@ -86,8 +86,8 @@ func (c *Client) RunSubscriber(wg *sync.WaitGroup, subTimes *SubTimes, done *cha
 	defer wg.Done()
 	// start generator
 	// start subscriber
-
-	c.subscribe(wg, subTimes, done, mtls)
+	wg.Add(1)
+	go c.subscribe(wg, subTimes, done, mtls)
 
 }
 

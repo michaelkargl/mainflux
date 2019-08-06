@@ -97,10 +97,10 @@ func main() {
 		pubs       = flag.Int("pubs", 1, "Number of clients to start")
 		subs       = flag.Int("subs", 1, "Number of clients to start")
 		format     = flag.String("format", "text", "Output format: text|json")
-		config     = flag.String("config", "connections.json", "File for mainflux channels")
+		config     = flag.String("config", "onechannel.json", "File for mainflux channels")
 		quiet      = flag.Bool("quiet", false, "Suppress logs while running")
-		mtls       = flag.Bool("mtls", false, "Use mtls authentication")
-		skipTlsVer = flag.Bool("skip_tls_ver", false, "Skip tls verification")
+		mtls       = flag.Bool("mtls", true, "Use mtls authentication")
+		skipTLSVer = flag.Bool("skip_tls_ver", false, "Skip tls verification")
 		ca         = flag.String("ca", "ca.crt", "CA file")
 	)
 	var wg sync.WaitGroup
@@ -110,6 +110,7 @@ func main() {
 	if *pubs < 1 && *subs < 1 {
 		log.Fatal("Invalid arguments")
 	}
+	fmt.Printf("mtls: %v", *mtls)
 
 	// Open connections jsonFile
 	jsonFile, err := os.Open(*config)
@@ -125,6 +126,7 @@ func main() {
 
 	var caByte []byte
 	if *mtls {
+		fmt.Println("Open cert")
 		caFile, err := os.Open(*ca)
 		defer caFile.Close()
 		if err != nil {
@@ -145,6 +147,7 @@ func main() {
 
 	start := time.Now()
 	n := len(connections)
+	var cert tls.Certificate
 	for i := 0; i < *subs; i++ {
 		if !*quiet {
 			//log.Println("Starting sub client ", i)
@@ -152,9 +155,11 @@ func main() {
 
 		con := connections[i%n]
 
-		cert, err := tls.X509KeyPair([]byte(con.MtlsCert), []byte(con.MtlsKey))
-		if err != nil {
-			log.Fatal(err)
+		if *mtls {
+			cert, err = tls.X509KeyPair([]byte(con.MtlsCert), []byte(con.MtlsKey))
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		c := &Client{
@@ -168,7 +173,7 @@ func main() {
 			MsgQoS:     byte(*qos),
 			Quiet:      *quiet,
 			Mtls:       *mtls,
-			SkipTlsVer: *skipTlsVer,
+			SkipTlsVer: *skipTLSVer,
 			CA:         caByte,
 			clientCert: cert,
 		}
@@ -178,10 +183,19 @@ func main() {
 	wg.Wait()
 
 	for i := 0; i < *pubs; i++ {
+
 		if !*quiet {
 			log.Println("Starting pub client ", i)
 		}
 		con := connections[i%n]
+
+		if *mtls {
+			cert, err = tls.X509KeyPair([]byte(con.MtlsCert), []byte(con.MtlsKey))
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
 		c := &Client{
 			ID:         strconv.Itoa(i),
 			BrokerURL:  *broker,
@@ -192,6 +206,10 @@ func main() {
 			MsgCount:   *count,
 			MsgQoS:     byte(*qos),
 			Quiet:      *quiet,
+			Mtls:       *mtls,
+			SkipTlsVer: *skipTLSVer,
+			CA:         caByte,
+			clientCert: cert,
 		}
 		go c.RunPublisher(resCh, *mtls)
 	}
