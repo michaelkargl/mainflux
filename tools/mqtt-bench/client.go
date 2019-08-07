@@ -86,8 +86,7 @@ func (c *Client) RunSubscriber(wg *sync.WaitGroup, subTimes *SubTimes, done *cha
 	defer wg.Done()
 	// start generator
 	// start subscriber
-	wg.Add(1)
-	go c.subscribe(wg, subTimes, done, mtls)
+	c.subscribe(wg, subTimes, done, mtls)
 
 }
 
@@ -106,8 +105,6 @@ func (c *Client) genMessages(ch chan *Message, done chan bool) {
 }
 
 func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bool, mtls bool) {
-	defer wg.Done()
-	defer fmt.Println("exiting subscribe")
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 
@@ -124,13 +121,10 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bo
 		mp := MessagePayload{}
 		err := json.Unmarshal(msg.Payload(), &mp)
 		if err != nil {
-			//log.Printf("CLIENT %s failed to decode message", clientID)
+			log.Printf("CLIENT %s failed to decode message", clientID)
 		}
-		//log.Printf("CLIENT %s received message on topic: %v - %s\n", clientID, msg.Topic(), mp.ID)
-		// if (*subTimes)[mp.ID] == nil {
-		// 	(*subTimes)[mp.ID] = []float64{}
-		// }
-		// (*subTimes)[mp.ID] = append((*subTimes)[mp.ID], float64(time.Now().Sub(mp.Sent).Nanoseconds()/1000))
+		log.Printf("Message receieved in %d", time.Since(mp.Sent).Nanoseconds()/1000)
+
 	})
 
 	token.Wait()

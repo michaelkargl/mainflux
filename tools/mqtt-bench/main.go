@@ -13,23 +13,38 @@ import (
 	"sync"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/GaryBoone/GoStats/stats"
-	"github.com/mainflux/mainflux/tools/mqtt-bench/viper"
 )
 
+// type config struct {
+// 	BrokerURL   string `json:"broker.url"`
+// 	QoS         string `json:"qos"`
+// 	MsgSize     string `json:"message.size"`
+// 	MsgCount    string `json:"message.count"`
+// 	Publishers  string `json:"publishers.num"`
+// 	Subscribers string `json:"subscribers.num`
+// 	Format      string `json:"format"`
+// 	Quiet       string `json:"quiet"`
+// 	Mtls        string `json:"mtls"`
+// 	SkipTLSVer  string `json:"skiptlsver"`
+// 	CA          string `json:"ca.file"`
+// 	Channels    string `json:"channels.file"`
+// }
+
 type config struct {
-	BrokerURL   string `json:"broker.url"`
-	QoS         string `json:"qos"`
-	MsgSize     string `json:"message.size"`
-	MsgCount    string `json:"message.count"`
-	Publishers  string `json:"publishers.num"`
-	Subscribers string `json:"subscribers.num`
-	Format      string `json:"format"`
-	Quiet       string `json:"quiet"`
-	Mtls        string `json:"mtls"`
-	SkipTLSVer  string `json:"skiptlsver"`
-	CA          string `json:"ca.file"`
-	Channels    string `json:"channels.file"`
+	BrokerURL   string `toml:"broker_url"`
+	QoS         int    `toml:"qos"`
+	MsgSize     int    `toml:"message_size"`
+	MsgCount    int    `toml:"message_count"`
+	Publishers  int    `toml:"publishers_num"`
+	Subscribers int    `toml:"subscribers_num"`
+	Format      string `toml:"format"`
+	Quiet       bool   `toml:"quiet"`
+	Mtls        bool   `toml:"mtls"`
+	SkipTLSVer  bool   `toml:"skiptlsver"`
+	CA          string `toml:"ca_file"`
+	Channels    string `toml:"channels_file"`
 }
 
 // Message describes a message
@@ -95,12 +110,16 @@ type JSONResults struct {
 }
 
 // Connection represents connection
-type Connection struct {
+type connection struct {
 	ChannelID string `json:"ChannelID"`
 	ThingID   string `json:"ThingID"`
 	ThingKey  string `json:"ThingKey"`
 	MtlsCert  string `json:"MtlsCert"`
 	MtlsKey   string `json:"MtlsKey"`
+}
+
+type Connections struct {
+	Connection []connection
 }
 
 func main() {
@@ -127,52 +146,31 @@ func main() {
 		c := loadConfig(conf)
 
 		broker = &c.BrokerURL
-		n, _ := strconv.Atoi(c.QoS)
-		qos = &n
-		s, _ := strconv.Atoi(c.MsgSize)
-		size = &s
-		cnt, _ := strconv.Atoi(c.MsgCount)
-		count = &cnt
+		qos = &c.QoS
+		size = &c.MsgSize
+		count = &c.MsgCount
 
-		pn, _ := strconv.Atoi(c.Publishers)
-		sn, _ := strconv.Atoi(c.Subscribers)
-
-		pubs = &pn
-		subs = &sn
+		pubs = &c.Publishers
+		subs = &c.Subscribers
 
 		format = &c.Format
 		channels = &c.Channels
-		q, _ := strconv.ParseBool(c.Quiet)
-		quiet = &q
-
-		m, _ := strconv.ParseBool(c.Mtls)
-		mtls = &m
-
-		sk, _ := strconv.ParseBool(c.SkipTLSVer)
-		skipTLSVer = &sk
+		quiet = &c.Quiet
+		mtls = &c.Mtls
+		skipTLSVer = &c.SkipTLSVer
 		ca = &c.CA
 
 	}
 
 	var wg sync.WaitGroup
+	var err error
+
 	subTimes := make(SubTimes)
 
 	if *pubs < 1 && *subs < 1 {
 		log.Fatal("Invalid arguments")
 	}
 	fmt.Printf("mtls: %v", *mtls)
-
-	// Open connections jsonFile
-	jsonFile, err := os.Open(*channels)
-	// if we os.Open returns an error then handle it
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Successfully opened channel conf file")
-	// defer the closing of our jsonFile so that we can parse it later on
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
 
 	var caByte []byte
 	if *mtls {
@@ -186,11 +184,9 @@ func main() {
 		caByte, _ = ioutil.ReadAll(caFile)
 	}
 
-	connections := []Connection{}
-	err = json.Unmarshal([]byte(byteValue), &connections)
-	if err != nil {
-		log.Fatalf("Failed to load channels conf %s", err.Error())
-	}
+	c := Connections{}
+	loadChansConfig(channels, &c)
+	connections := c.Connection
 
 	resCh := make(chan *RunResults)
 	done := make(chan bool)
@@ -392,29 +388,22 @@ func getTestTopic(channelID string) string {
 }
 
 func loadConfig(path *string) config {
-
+	var conf = config{}
 	if path == nil || len(*path) < 1 {
 		return config{}
 	}
 
-	cf, err := viper.Read(*path)
-	if err != nil {
-		log.Printf(fmt.Sprintf("Failed to read config:  %s", err))
-		return config{}
+	if _, err := toml.DecodeFile(*path, &conf); err != nil {
+		log.Fatalf("cannot load config %s " + *path)
+	}
+	return conf
+
+}
+
+func loadChansConfig(path *string, conns *Connections) {
+
+	if _, err := toml.DecodeFile(*path, conns); err != nil {
+		log.Fatalf("cannot load channels config %s " + *path)
 	}
 
-	return config{
-		BrokerURL:   cf[viper.BrokerURL],
-		QoS:         cf[viper.QoS],
-		MsgSize:     cf[viper.MsgSize],
-		MsgCount:    cf[viper.MsgCount],
-		Publishers:  cf[viper.Publishers],
-		Subscribers: cf[viper.Subscribers],
-		Format:      cf[viper.Format],
-		Quiet:       cf[viper.Quiet],
-		Mtls:        cf[viper.Mtls],
-		SkipTLSVer:  cf[viper.SkipTLSVer],
-		CA:          cf[viper.CA],
-		Channels:    cf[viper.Channels],
-	}
 }
