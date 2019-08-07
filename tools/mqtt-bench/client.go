@@ -38,8 +38,8 @@ type Client struct {
 
 // RunPublisher - runs publisher
 func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
-	newMsgs := make(chan *Message)
-	pubMsgs := make(chan *Message)
+	newMsgs := make(chan *Message, 100)
+	pubMsgs := make(chan *Message, 100)
 	doneGen := make(chan bool)
 	donePub := make(chan bool)
 	runResults := new(RunResults)

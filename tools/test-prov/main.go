@@ -44,8 +44,8 @@ const (
 func main() {
 	var (
 		host     = flag.String("host", "http://localhost", "Mainflux host address")
-		username = flag.String("username", "mainflux", "mainflux user")
-		password = flag.String("password", "mainflux", "mainflux user password")
+		username = flag.String("username", "mirkot@mainflux.com", "mainflux user")
+		password = flag.String("password", "test1234", "mainflux user password")
 		num      = flag.Int("num", 10, "number of created channels")
 		ssl      = flag.Bool("ssl", false, "create thing certs")
 		ca       = flag.String("ca", "ca.crt", "CA file for creating things certs")

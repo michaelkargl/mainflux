@@ -14,7 +14,23 @@ import (
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
+	"github.com/mainflux/mainflux/tools/mqtt-bench/viper"
 )
+
+type config struct {
+	BrokerURL   string `json:"broker.url"`
+	QoS         string `json:"qos"`
+	MsgSize     string `json:"message.size"`
+	MsgCount    string `json:"message.count"`
+	Publishers  string `json:"publishers.num"`
+	Subscribers string `json:"subscribers.num`
+	Format      string `json:"format"`
+	Quiet       string `json:"quiet"`
+	Mtls        string `json:"mtls"`
+	SkipTLSVer  string `json:"skiptlsver"`
+	CA          string `json:"ca.file"`
+	Channels    string `json:"channels.file"`
+}
 
 // Message describes a message
 type MessagePayload struct {
@@ -97,23 +113,57 @@ func main() {
 		pubs       = flag.Int("pubs", 1, "Number of clients to start")
 		subs       = flag.Int("subs", 1, "Number of clients to start")
 		format     = flag.String("format", "text", "Output format: text|json")
-		config     = flag.String("config", "onechannel.json", "File for mainflux channels")
+		conf       = flag.String("config", "config.toml", "config file, if used other options are ignored")
+		channels   = flag.String("channels", "onechannel.json", "File for mainflux channels")
 		quiet      = flag.Bool("quiet", false, "Suppress logs while running")
 		mtls       = flag.Bool("mtls", true, "Use mtls authentication")
 		skipTLSVer = flag.Bool("skip_tls_ver", false, "Skip tls verification")
 		ca         = flag.String("ca", "ca.crt", "CA file")
 	)
+
+	flag.Parse()
+
+	if conf != nil && len(*conf) > 0 {
+		c := loadConfig(conf)
+
+		broker = &c.BrokerURL
+		n, _ := strconv.Atoi(c.QoS)
+		qos = &n
+		s, _ := strconv.Atoi(c.MsgSize)
+		size = &s
+		cnt, _ := strconv.Atoi(c.MsgCount)
+		count = &cnt
+
+		pn, _ := strconv.Atoi(c.Publishers)
+		sn, _ := strconv.Atoi(c.Subscribers)
+
+		pubs = &pn
+		subs = &sn
+
+		format = &c.Format
+		channels = &c.Channels
+		q, _ := strconv.ParseBool(c.Quiet)
+		quiet = &q
+
+		m, _ := strconv.ParseBool(c.Mtls)
+		mtls = &m
+
+		sk, _ := strconv.ParseBool(c.SkipTLSVer)
+		skipTLSVer = &sk
+		ca = &c.CA
+
+	}
+
 	var wg sync.WaitGroup
 	subTimes := make(SubTimes)
 
-	flag.Parse()
 	if *pubs < 1 && *subs < 1 {
 		log.Fatal("Invalid arguments")
 	}
 	fmt.Printf("mtls: %v", *mtls)
 
 	// Open connections jsonFile
-	jsonFile, err := os.Open(*config)
+	jsonFile, err := os.Open(*channels)
 	// if we os.Open returns an error then handle it
 	if err != nil {
 		log.Fatal(err)
@@ -339,4 +389,32 @@ func printResults(results []*RunResults, totals *TotalResults, format string) {
 
 func getTestTopic(channelID string) string {
 	return "channels/" + channelID + "/messages/test"
+}
+
+func loadConfig(path *string) config {
+
+	if path == nil || len(*path) < 1 {
+		return config{}
+	}
+
+	cf, err := viper.Read(*path)
+	if err != nil {
+		log.Printf(fmt.Sprintf("Failed to read config:  %s", err))
+		return config{}
+	}
+
+	return config{
+		BrokerURL:   cf[viper.BrokerURL],
+		QoS:         cf[viper.QoS],
+		MsgSize:     cf[viper.MsgSize],
+		MsgCount:    cf[viper.MsgCount],
+		Publishers:  cf[viper.Publishers],
+		Subscribers: cf[viper.Subscribers],
+		Format:      cf[viper.Format],
+		Quiet:       cf[viper.Quiet],
+		Mtls:        cf[viper.Mtls],
+		SkipTLSVer:  cf[viper.SkipTLSVer],
+		CA:          cf[viper.CA],
+		Channels:    cf[viper.Channels],
+	}
 }
