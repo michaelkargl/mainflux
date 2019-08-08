@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/GaryBoone/GoStats/stats"
-
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 

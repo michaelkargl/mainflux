@@ -170,11 +170,9 @@ func main() {
 	if *pubs < 1 && *subs < 1 {
 		log.Fatal("Invalid arguments")
 	}
-	fmt.Printf("mtls: %v", *mtls)
 
 	var caByte []byte
 	if *mtls {
-		fmt.Println("Open cert")
 		caFile, err := os.Open(*ca)
 		defer caFile.Close()
 		if err != nil {
@@ -196,7 +194,7 @@ func main() {
 	var cert tls.Certificate
 	for i := 0; i < *subs; i++ {
 		if !*quiet {
-			//log.Println("Starting sub client ", i)
+			log.Println("Starting sub client ", i)
 		}
 
 		con := connections[i%n]
@@ -261,7 +259,6 @@ func main() {
 	}
 
 	// collect the results
-	fmt.Printf("collecting results")
 	var results []*RunResults
 	if *pubs > 0 {
 		results = make([]*RunResults, *pubs)
@@ -271,7 +268,6 @@ func main() {
 		results[i] = <-resCh
 	}
 
-	fmt.Println("processing results")
 	totalTime := time.Now().Sub(start)
 	totals := calculateTotalResults(results, totalTime, &subTimes)
 	if totals == nil {
