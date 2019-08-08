@@ -38,8 +38,8 @@ type Client struct {
 
 // RunPublisher - runs publisher
 func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
-	newMsgs := make(chan *Message, 100)
-	pubMsgs := make(chan *Message, 100)
+	newMsgs := make(chan *Message)
+	pubMsgs := make(chan *Message)
 	doneGen := make(chan bool)
 	donePub := make(chan bool)
 	runResults := new(RunResults)
@@ -123,8 +123,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bo
 		if err != nil {
 			log.Printf("CLIENT %s failed to decode message", clientID)
 		}
-		log.Printf("Message receieved in %d", time.Since(mp.Sent).Nanoseconds()/1000)
-
+		//log.Printf("Message receieved in %d", time.Since(mp.Sent).Nanoseconds()/1000)
 	})
 
 	token.Wait()
