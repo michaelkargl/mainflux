@@ -14,23 +14,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/GaryBoone/GoStats/stats"
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
-
-// type config struct {
-// 	BrokerURL   string `json:"broker.url"`
-// 	QoS         string `json:"qos"`
-// 	MsgSize     string `json:"message.size"`
-// 	MsgCount    string `json:"message.count"`
-// 	Publishers  string `json:"publishers.num"`
-// 	Subscribers string `json:"subscribers.num`
-// 	Format      string `json:"format"`
-// 	Quiet       string `json:"quiet"`
-// 	Mtls        string `json:"mtls"`
-// 	SkipTLSVer  string `json:"skiptlsver"`
-// 	CA          string `json:"ca.file"`
-// 	Channels    string `json:"channels.file"`
-// }
 
 type config struct {
 	BrokerURL   string `toml:"broker_url"`
@@ -42,6 +28,7 @@ type config struct {
 	Format      string `toml:"format"`
 	Quiet       bool   `toml:"quiet"`
 	Mtls        bool   `toml:"mtls"`
+	Retain      bool   `toml:"retain"`
 	SkipTLSVer  bool   `toml:"skiptlsver"`
 	CA          string `toml:"ca_file"`
 	Channels    string `toml:"channels_file"`
@@ -132,10 +119,11 @@ func main() {
 		pubs       = flag.Int("pubs", 1, "Number of clients to start")
 		subs       = flag.Int("subs", 1, "Number of clients to start")
 		format     = flag.String("format", "text", "Output format: text|json")
-		conf       = flag.String("config", "config.toml", "config file, if used other options are ignored")
-		channels   = flag.String("channels", "onechannel.json", "File for mainflux channels")
+		conf       = flag.String("config", "", "config file, if used other options are ignored")
+		channels   = flag.String("channels", "onechannel.toml", "File for mainflux channels")
 		quiet      = flag.Bool("quiet", false, "Suppress logs while running")
-		mtls       = flag.Bool("mtls", true, "Use mtls authentication")
+		retain     = flag.Bool("retain", false, "mqtt retain")
+		mtls       = flag.Bool("mtls", false, "Use mtls authentication")
 		skipTLSVer = flag.Bool("skip_tls_ver", false, "Skip tls verification")
 		ca         = flag.String("ca", "ca.crt", "CA file")
 	)
@@ -157,6 +145,7 @@ func main() {
 		channels = &c.Channels
 		quiet = &c.Quiet
 		mtls = &c.Mtls
+		retain = &c.Retain
 		skipTLSVer = &c.SkipTLSVer
 		ca = &c.CA
 
@@ -193,9 +182,6 @@ func main() {
 	n := len(connections)
 	var cert tls.Certificate
 	for i := 0; i < *subs; i++ {
-		if !*quiet {
-			log.Println("Starting sub client ", i)
-		}
 
 		con := connections[i%n]
 
@@ -220,6 +206,7 @@ func main() {
 			SkipTlsVer: *skipTLSVer,
 			CA:         caByte,
 			clientCert: cert,
+			Retain:     *retain,
 		}
 		wg.Add(1)
 		go c.RunSubscriber(&wg, &subTimes, &done, *mtls)
@@ -228,9 +215,6 @@ func main() {
 
 	for i := 0; i < *pubs; i++ {
 
-		if !*quiet {
-			log.Println("Starting pub client ", i)
-		}
 		con := connections[i%n]
 
 		if *mtls {
@@ -254,6 +238,7 @@ func main() {
 			SkipTlsVer: *skipTLSVer,
 			CA:         caByte,
 			clientCert: cert,
+			Retain:     *retain,
 		}
 		go c.RunPublisher(resCh, *mtls)
 	}
@@ -292,12 +277,15 @@ func calculateTotalResults(results []*RunResults, totalTime time.Duration, subTi
 	totals.MsgTimeMin = results[0].MsgTimeMin
 	for i, res := range results {
 
-		times := (*subTimes)[res.ID]
-		subTimeRunResults.MsgTimeMin = stats.StatsMin(times)
-		subTimeRunResults.MsgTimeMax = stats.StatsMax(times)
-		subTimeRunResults.MsgTimeMean = stats.StatsMean(times)
-		subTimeRunResults.MsgTimeStd = stats.StatsSampleStandardDeviation(times)
+		if len(*subTimes) > 0 {
+			times := mat.NewDense(1, len((*subTimes)[res.ID]), (*subTimes)[res.ID])
 
+			subTimeRunResults.MsgTimeMin = mat.Min(times)
+			subTimeRunResults.MsgTimeMax = mat.Max(times)
+			subTimeRunResults.MsgTimeMean = stat.Mean((*subTimes)[res.ID], nil)
+			subTimeRunResults.MsgTimeStd = stat.StdDev((*subTimes)[res.ID], nil)
+
+		}
 		res.MsgDelTimeMin = subTimeRunResults.MsgTimeMin
 		res.MsgDelTimeMax = subTimeRunResults.MsgTimeMax
 		res.MsgDelTimeMean = subTimeRunResults.MsgTimeMean
@@ -330,12 +318,12 @@ func calculateTotalResults(results []*RunResults, totalTime time.Duration, subTi
 		bws[i] = res.MsgsPerSec
 	}
 	totals.Ratio = float64(totals.Successes) / float64(totals.Successes+totals.Failures)
-	totals.AvgMsgsPerSec = stats.StatsMean(msgsPerSecs)
-	totals.AvgRunTime = stats.StatsMean(runTimes)
-	totals.MsgDelTimeMeanAvg = stats.StatsMean(msgTimeMeansDelivered)
-	totals.MsgDelTimeMeanStd = stats.StatsSampleStandardDeviation(msgTimeMeansDelivered)
-	totals.MsgTimeMeanAvg = stats.StatsMean(msgTimeMeans)
-	totals.MsgTimeMeanStd = stats.StatsSampleStandardDeviation(msgTimeMeans)
+	totals.AvgMsgsPerSec = stat.Mean(msgsPerSecs, nil)
+	totals.AvgRunTime = stat.Mean(runTimes, nil)
+	totals.MsgDelTimeMeanAvg = stat.Mean(msgTimeMeansDelivered, nil)
+	totals.MsgDelTimeMeanStd = stat.StdDev(msgTimeMeansDelivered, nil)
+	totals.MsgTimeMeanAvg = stat.Mean(msgTimeMeans, nil)
+	totals.MsgTimeMeanStd = stat.StdDev(msgTimeMeans, nil)
 
 	return totals
 }
@@ -353,7 +341,7 @@ func printResults(results []*RunResults, totals *TotalResults, format string, qu
 
 		fmt.Println(string(out.Bytes()))
 	default:
-		if quiet {
+		if !quiet {
 			for _, res := range results {
 				fmt.Printf("======= CLIENT %s =======\n", res.ID)
 				fmt.Printf("Ratio:               %.3f (%d/%d)\n", float64(res.Successes)/float64(res.Successes+res.Failures), res.Successes, res.Successes+res.Failures)
@@ -392,7 +380,7 @@ func loadConfig(path *string) config {
 	}
 
 	if _, err := toml.DecodeFile(*path, &conf); err != nil {
-		log.Fatalf("cannot load config %s " + *path)
+		log.Fatalf("cannot load config %s ", *path)
 	}
 	return conf
 
@@ -401,7 +389,7 @@ func loadConfig(path *string) config {
 func loadChansConfig(path *string, conns *Connections) {
 
 	if _, err := toml.DecodeFile(*path, conns); err != nil {
-		log.Fatalf("cannot load channels config %s " + *path)
+		log.Fatalf("cannot load channels config %s \nuse tools/provision to create file", *path)
 	}
 
 }
