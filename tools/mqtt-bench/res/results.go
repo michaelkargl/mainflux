@@ -19,6 +19,8 @@ type RunResults struct {
 
 	MsgsPerSec float64 `json:"msgs_per_sec"`
 }
+
+// SubTimes - measuring time of arrival of message in subs
 type SubTimes map[string][]float64
 
 // TotalResults describes results of all clients / runs
