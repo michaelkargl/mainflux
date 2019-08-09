@@ -737,6 +737,31 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:396855b2df7b4fd7259ac196883f950edeb7f2adf5b1bb1cdd0e9160248a7dc1"
+  name = "gonum.org/v1/gonum"
+  packages = [
+    "blas",
+    "blas/blas64",
+    "blas/cblas128",
+    "blas/gonum",
+    "floats",
+    "internal/asm/c128",
+    "internal/asm/c64",
+    "internal/asm/f32",
+    "internal/asm/f64",
+    "internal/cmplx64",
+    "internal/math32",
+    "lapack",
+    "lapack/gonum",
+    "lapack/lapack64",
+    "mat",
+    "stat",
+  ]
+  pruneopts = "UT"
+  revision = "ced62fe5104b907b6c16cb7e575c17b2e62ceddd"
+
+[[projects]]
+  branch = "master"
   digest = "1:cd018653a358d4b743a9d3bee89e825521f2ab2f2ec0770164bf7632d8d73ab7"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
@@ -849,6 +874,7 @@
     "go.mongodb.org/mongo-driver/mongo/options",
     "golang.org/x/crypto/bcrypt",
     "golang.org/x/net/context",
+    "gonum.org/v1/gonum/stat",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",

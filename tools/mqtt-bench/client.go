@@ -10,8 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/GaryBoone/GoStats/stats"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mat "gonum.org/v1/gonum/mat"
+	stat "gonum.org/v1/gonum/stat"
 )
 
 // SubTimes - measuring time of arrival of message in subs
@@ -51,6 +52,7 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 	go c.pubMessages(newMsgs, pubMsgs, doneGen, donePub, mtls)
 
 	times := []float64{}
+
 	for {
 		select {
 		case m := <-pubMsgs:
@@ -65,10 +67,11 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 		case <-donePub:
 			// Calculate results
 			duration := time.Now().Sub(started)
-			runResults.MsgTimeMin = stats.StatsMin(times)
-			runResults.MsgTimeMax = stats.StatsMax(times)
-			runResults.MsgTimeMean = stats.StatsMean(times)
-			runResults.MsgTimeStd = stats.StatsSampleStandardDeviation(times)
+			timeMatrix := mat.NewDense(1, len(times), times)
+			runResults.MsgTimeMin = mat.Min(timeMatrix)
+			runResults.MsgTimeMax = mat.Max(timeMatrix)
+			runResults.MsgTimeMean = stat.Mean(times, nil)
+			runResults.MsgTimeStd = stat.StdDev(times, nil)
 			runResults.RunTime = duration.Seconds()
 			runResults.MsgsPerSec = float64(runResults.Successes) / duration.Seconds()
 
