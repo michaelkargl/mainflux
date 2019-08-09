@@ -16,8 +16,6 @@ import (
 	stat "gonum.org/v1/gonum/stat"
 )
 
-// SubTimes - measuring time of arrival of message in subs
-
 // Client - represents mqtt client
 type Client struct {
 	ID         string
@@ -38,17 +36,17 @@ type Client struct {
 	ClientKey  *rsa.PrivateKey
 }
 
-// Message describes a message
-type MessagePayload struct {
+type messagePayload struct {
 	ID      string
 	Sent    time.Time
 	Payload interface{}
 }
-type Message struct {
+
+type message struct {
 	ID             string
 	Topic          string
 	QoS            byte
-	Payload        MessagePayload
+	Payload        messagePayload
 	Sent           time.Time
 	Delivered      time.Time
 	DeliveredToSub time.Time
@@ -57,8 +55,8 @@ type Message struct {
 
 // RunPublisher - runs publisher
 func (c *Client) RunPublisher(r chan *res.RunResults, mtls bool) {
-	newMsgs := make(chan *Message)
-	pubMsgs := make(chan *Message)
+	newMsgs := make(chan *message)
+	pubMsgs := make(chan *message)
 	doneGen := make(chan bool)
 	donePub := make(chan bool)
 	runResults := new(res.RunResults)
@@ -108,10 +106,10 @@ func (c *Client) RunSubscriber(wg *sync.WaitGroup, subTimes *res.SubTimes, done 
 
 }
 
-func (c *Client) genMessages(ch chan *Message, done chan bool) {
+func (c *Client) genMessages(ch chan *message, done chan bool) {
 	for i := 0; i < c.MsgCount; i++ {
-		msgPayload := MessagePayload{Payload: make([]byte, c.MsgSize)}
-		ch <- &Message{
+		msgPayload := messagePayload{Payload: make([]byte, c.MsgSize)}
+		ch <- &message{
 			Topic:   c.MsgTopic,
 			QoS:     c.MsgQoS,
 			Payload: msgPayload,
@@ -135,7 +133,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *res.SubTimes, done *cha
 
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, 0, func(cl mqtt.Client, msg mqtt.Message) {
 
-		mp := MessagePayload{}
+		mp := messagePayload{}
 		err := json.Unmarshal(msg.Payload(), &mp)
 		if err != nil {
 			log.Printf("CLIENT %s failed to decode message", clientID)
@@ -146,7 +144,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *res.SubTimes, done *cha
 
 }
 
-func (c *Client) pubMessages(in, out chan *Message, doneGen chan bool, donePub chan bool, mtls bool) {
+func (c *Client) pubMessages(in, out chan *message, doneGen chan bool, donePub chan bool, mtls bool) {
 
 	clientID := fmt.Sprintf("pub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
