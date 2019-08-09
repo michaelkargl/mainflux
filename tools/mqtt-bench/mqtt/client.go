@@ -1,4 +1,4 @@
-package main
+package mqtt
 
 import (
 	"crypto/rsa"
@@ -11,12 +11,12 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/mainflux/mainflux/tools/mqtt-bench/res"
 	mat "gonum.org/v1/gonum/mat"
 	stat "gonum.org/v1/gonum/stat"
 )
 
 // SubTimes - measuring time of arrival of message in subs
-type SubTimes map[string][]float64
 
 // Client - represents mqtt client
 type Client struct {
@@ -31,19 +31,37 @@ type Client struct {
 	Quiet      bool
 	mqttClient *mqtt.Client
 	Mtls       bool
-	SkipTlsVer bool
+	SkipTLSVer bool
+	Retain     bool
 	CA         []byte
-	clientCert tls.Certificate
+	ClientCert tls.Certificate
 	ClientKey  *rsa.PrivateKey
 }
 
+// Message describes a message
+type MessagePayload struct {
+	ID      string
+	Sent    time.Time
+	Payload interface{}
+}
+type Message struct {
+	ID             string
+	Topic          string
+	QoS            byte
+	Payload        MessagePayload
+	Sent           time.Time
+	Delivered      time.Time
+	DeliveredToSub time.Time
+	Error          bool
+}
+
 // RunPublisher - runs publisher
-func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
+func (c *Client) RunPublisher(r chan *res.RunResults, mtls bool) {
 	newMsgs := make(chan *Message)
 	pubMsgs := make(chan *Message)
 	doneGen := make(chan bool)
 	donePub := make(chan bool)
-	runResults := new(RunResults)
+	runResults := new(res.RunResults)
 
 	started := time.Now()
 	// Start generator
@@ -76,14 +94,14 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 			runResults.MsgsPerSec = float64(runResults.Successes) / duration.Seconds()
 
 			// Report results and exit
-			res <- runResults
+			r <- runResults
 			return
 		}
 	}
 }
 
 // RunSubscriber - runs a subscriber
-func (c *Client) RunSubscriber(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bool, mtls bool) {
+func (c *Client) RunSubscriber(wg *sync.WaitGroup, subTimes *res.SubTimes, done *chan bool, mtls bool) {
 	defer wg.Done()
 	// Start subscriber
 	c.subscribe(wg, subTimes, done, mtls)
@@ -103,7 +121,7 @@ func (c *Client) genMessages(ch chan *Message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bool, mtls bool) {
+func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *res.SubTimes, done *chan bool, mtls bool) {
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 
@@ -146,7 +164,7 @@ func (c *Client) pubMessages(in, out chan *Message, doneGen chan bool, donePub c
 				m.Payload.Sent = m.Sent
 
 				pload, _ := json.Marshal(m.Payload)
-				token := client.Publish(m.Topic, m.QoS, false, pload)
+				token := client.Publish(m.Topic, m.QoS, c.Retain, pload)
 				token.Wait()
 				if token.Error() != nil {
 					m.Error = true
@@ -193,7 +211,7 @@ func (c *Client) connect(onConnected func(client mqtt.Client), mtls bool) error 
 	if mtls {
 
 		cfg := &tls.Config{
-			InsecureSkipVerify: c.SkipTlsVer,
+			InsecureSkipVerify: c.SkipTLSVer,
 		}
 
 		if c.CA != nil {
@@ -202,8 +220,8 @@ func (c *Client) connect(onConnected func(client mqtt.Client), mtls bool) error 
 				log.Printf("Successfully added certificate\n")
 			}
 		}
-		if c.clientCert.Certificate != nil {
-			cfg.Certificates = []tls.Certificate{c.clientCert}
+		if c.ClientCert.Certificate != nil {
+			cfg.Certificates = []tls.Certificate{c.ClientCert}
 		}
 
 		cfg.BuildNameToCertificate()
