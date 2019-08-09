@@ -121,8 +121,4 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/GaryBoone/GoStats"
-
-[[constraint]]
-  branch = "master"
   name = "gonum.org/v1/gonum"
