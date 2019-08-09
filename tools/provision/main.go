@@ -28,7 +28,7 @@ type connection struct {
 	MTLSCert  string
 	MtlsKey   string
 }
-type Connections struct {
+type connections struct {
 	Connection []connection
 }
 
@@ -84,7 +84,7 @@ func main() {
 
 	things := []sdk.Thing{}
 	channels := []sdk.Channel{}
-	connections := Connections{Connection: []connection{}}
+	connections := connections{Connection: []connection{}}
 	var caCert *x509.Certificate
 	if *ssl {
 
@@ -178,7 +178,7 @@ func main() {
 	writeConnsToToml(connections)
 }
 
-func writeConnsToToml(c Connections) {
+func writeConnsToToml(c connections) {
 
 	buf := new(bytes.Buffer)
 	if err := toml.NewEncoder(buf).Encode(c); err != nil {
