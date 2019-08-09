@@ -145,7 +145,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *res.SubTimes, done *cha
 }
 
 func (c *Client) pubMessages(in, out chan *message, doneGen chan bool, donePub chan bool, mtls bool) {
-
 	clientID := fmt.Sprintf("pub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 	onConnected := func(client mqtt.Client) {
