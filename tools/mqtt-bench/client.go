@@ -14,6 +14,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+// SubTimes - measuring time of arrival of message in subs
 type SubTimes map[string][]float64
 
 // Client - represents mqtt client
@@ -44,9 +45,9 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 	runResults := new(RunResults)
 
 	started := time.Now()
-	// start generator
+	// Start generator
 	go c.genMessages(newMsgs, doneGen)
-	// start publisher
+	// Start publisher
 	go c.pubMessages(newMsgs, pubMsgs, doneGen, donePub, mtls)
 
 	times := []float64{}
@@ -55,16 +56,14 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 		case m := <-pubMsgs:
 			cid := m.ID
 			if m.Error {
-				////log.Printf("CLIENT %v ERROR publishing message: %v: at %v\n", c.ID, m.Topic, m.Sent.Unix())
 				runResults.Failures++
 			} else {
-				//log.Printf("Message published: %v: sent: %v delivered: %v flight time: %v\n", m.Topic, m.Sent, m.Delivered, m.Delivered.Sub(m.Sent))
 				runResults.Successes++
 				runResults.ID = cid
 				times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microseconds
 			}
 		case <-donePub:
-			// calculate results
+			// Calculate results
 			duration := time.Now().Sub(started)
 			runResults.MsgTimeMin = stats.StatsMin(times)
 			runResults.MsgTimeMax = stats.StatsMax(times)
@@ -73,7 +72,7 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 			runResults.RunTime = duration.Seconds()
 			runResults.MsgsPerSec = float64(runResults.Successes) / duration.Seconds()
 
-			// report results and exit
+			// Report results and exit
 			res <- runResults
 			return
 		}
@@ -83,8 +82,7 @@ func (c *Client) RunPublisher(res chan *RunResults, mtls bool) {
 // RunSubscriber - runs a subscriber
 func (c *Client) RunSubscriber(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bool, mtls bool) {
 	defer wg.Done()
-	// start generator
-	// start subscriber
+	// Start subscriber
 	c.subscribe(wg, subTimes, done, mtls)
 
 }
@@ -99,7 +97,6 @@ func (c *Client) genMessages(ch chan *Message, done chan bool) {
 		}
 	}
 	done <- true
-	// //log.Printf("CLIENT %v is done generating messages\n", c.ID)
 	return
 }
 
@@ -122,7 +119,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *SubTimes, done *chan bo
 		if err != nil {
 			log.Printf("CLIENT %s failed to decode message", clientID)
 		}
-		//log.Printf("Message receieved in %d", time.Since(mp.Sent).Nanoseconds()/1000)
 	})
 
 	token.Wait()
@@ -135,7 +131,7 @@ func (c *Client) pubMessages(in, out chan *Message, doneGen chan bool, donePub c
 	c.ID = clientID
 	onConnected := func(client mqtt.Client) {
 		if !c.Quiet {
-			//log.Printf("CLIENT %v is connected to the broker %v\n", clientID, c.BrokerURL)
+			log.Printf("CLIENT %v is connected to the broker %v\n", clientID, c.BrokerURL)
 		}
 		ctr := 0
 		for {
@@ -150,7 +146,6 @@ func (c *Client) pubMessages(in, out chan *Message, doneGen chan bool, donePub c
 				token := client.Publish(m.Topic, m.QoS, false, pload)
 				token.Wait()
 				if token.Error() != nil {
-					//log.Printf("CLIENT %v Error sending message: %v\n", clientID, token.Error())
 					m.Error = true
 				} else {
 					m.Delivered = time.Now()
@@ -160,14 +155,14 @@ func (c *Client) pubMessages(in, out chan *Message, doneGen chan bool, donePub c
 
 				if ctr > 0 && ctr%100 == 0 {
 					if !c.Quiet {
-						//log.Printf("CLIENT %v published %v messages and keeps publishing...\n", clientID, ctr)
+						log.Printf("CLIENT %v published %v messages and keeps publishing...\n", clientID, ctr)
 					}
 				}
 				ctr++
 			case <-doneGen:
 				donePub <- true
 				if !c.Quiet {
-					//log.Printf("CLIENT %v is done publishing\n", clientID)
+					log.Printf("CLIENT %v is done publishing\n", clientID)
 				}
 				return
 			}
@@ -181,13 +176,12 @@ func (c *Client) pubMessages(in, out chan *Message, doneGen chan bool, donePub c
 func (c *Client) connect(onConnected func(client mqtt.Client), mtls bool) error {
 	opts := mqtt.NewClientOptions().
 		AddBroker(c.BrokerURL).
-		//SetClientID(fmt.Sprintf("mqtt-benchmark-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)).
 		SetClientID(c.ID).
 		SetCleanSession(true).
 		SetAutoReconnect(true).
 		SetOnConnectHandler(onConnected).
 		SetConnectionLostHandler(func(client mqtt.Client, reason error) {
-			//log.Printf("CLIENT %v lost connection to the broker: %v. Will reconnect...\n", clientID, reason.Error())
+			log.Printf("CLIENT %s lost connection to the broker: %v. Will reconnect...\n", c.ID, reason.Error())
 		})
 	if c.BrokerUser != "" && c.BrokerPass != "" {
 		opts.SetUsername(c.BrokerUser)

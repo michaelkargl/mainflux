@@ -25,7 +25,7 @@ type connection struct {
 	ChannelID string
 	ThingID   string
 	ThingKey  string
-	MtlsCert  string
+	MTLSCert  string
 	MtlsKey   string
 }
 type Connections struct {
@@ -121,13 +121,6 @@ func main() {
 		cert := ""
 		key := ""
 		if *ssl {
-			// 		thing_cert:
-			// # Create mainflux server key and CSR.
-			// openssl req -new -sha256 -newkey rsa:4096 -nodes -keyout $(CRT_LOCATION)/$(CRT_FILE_NAME).key \
-			// 			-out $(CRT_LOCATION)/$(CRT_FILE_NAME).csr -subj "/CN=$(KEY)/O=$(O)/OU=$(OU)/emailAddress=$(EA)"
-
-			// # Sign client CSR.
-			// openssl x509 -req -days 730 -in $(CRT_LOCATION)/$(CRT_FILE_NAME).csr -CA $(CRT_LOCATION)/ca.crt -CAkey $(CRT_LOCATION)/ca.key -CAcreateserial -out $(CRT_LOCATION)/$(CRT_FILE_NAME).crt
 			var priv interface{}
 			priv, err = rsa.GenerateKey(rand.Reader, rsaBits)
 
@@ -197,7 +190,6 @@ func writeConnsToToml(c Connections) {
 		panic(err)
 	}
 
-	// write a chunk
 	if _, err := fo.Write(buf.Bytes()); err != nil {
 		panic(err)
 	}

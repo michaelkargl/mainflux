@@ -114,7 +114,7 @@ type connection struct {
 	ChannelID string `json:"ChannelID"`
 	ThingID   string `json:"ThingID"`
 	ThingKey  string `json:"ThingKey"`
-	MtlsCert  string `json:"MtlsCert"`
+	MTLSCert  string `json:"MTLSCert"`
 	MtlsKey   string `json:"MtlsKey"`
 }
 
@@ -200,7 +200,7 @@ func main() {
 		con := connections[i%n]
 
 		if *mtls {
-			cert, err = tls.X509KeyPair([]byte(con.MtlsCert), []byte(con.MtlsKey))
+			cert, err = tls.X509KeyPair([]byte(con.MTLSCert), []byte(con.MtlsKey))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -234,7 +234,7 @@ func main() {
 		con := connections[i%n]
 
 		if *mtls {
-			cert, err = tls.X509KeyPair([]byte(con.MtlsCert), []byte(con.MtlsKey))
+			cert, err = tls.X509KeyPair([]byte(con.MTLSCert), []byte(con.MtlsKey))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -274,7 +274,7 @@ func main() {
 		return
 	}
 	// print stats
-	printResults(results, totals, *format)
+	printResults(results, totals, *format, *quiet)
 }
 func calculateTotalResults(results []*RunResults, totalTime time.Duration, subTimes *SubTimes) *TotalResults {
 	if results == nil || len(results) < 1 {
@@ -340,7 +340,7 @@ func calculateTotalResults(results []*RunResults, totalTime time.Duration, subTi
 	return totals
 }
 
-func printResults(results []*RunResults, totals *TotalResults, format string) {
+func printResults(results []*RunResults, totals *TotalResults, format string, quiet bool) {
 	switch format {
 	case "json":
 		jr := JSONResults{
@@ -353,16 +353,18 @@ func printResults(results []*RunResults, totals *TotalResults, format string) {
 
 		fmt.Println(string(out.Bytes()))
 	default:
-		for _, res := range results {
-			fmt.Printf("======= CLIENT %s =======\n", res.ID)
-			fmt.Printf("Ratio:               %.3f (%d/%d)\n", float64(res.Successes)/float64(res.Successes+res.Failures), res.Successes, res.Successes+res.Failures)
-			fmt.Printf("Runtime (s):         %.3f\n", res.RunTime)
-			fmt.Printf("Msg time min (us):   %.3f\n", res.MsgTimeMin)
-			fmt.Printf("Msg time max (us):   %.3f\n", res.MsgTimeMax)
-			fmt.Printf("Msg time mean (us):  %.3f\n", res.MsgTimeMean)
-			fmt.Printf("Msg time std (us):   %.3f\n", res.MsgTimeStd)
+		if quiet {
+			for _, res := range results {
+				fmt.Printf("======= CLIENT %s =======\n", res.ID)
+				fmt.Printf("Ratio:               %.3f (%d/%d)\n", float64(res.Successes)/float64(res.Successes+res.Failures), res.Successes, res.Successes+res.Failures)
+				fmt.Printf("Runtime (s):         %.3f\n", res.RunTime)
+				fmt.Printf("Msg time min (us):   %.3f\n", res.MsgTimeMin)
+				fmt.Printf("Msg time max (us):   %.3f\n", res.MsgTimeMax)
+				fmt.Printf("Msg time mean (us):  %.3f\n", res.MsgTimeMean)
+				fmt.Printf("Msg time std (us):   %.3f\n", res.MsgTimeStd)
 
-			fmt.Printf("Bandwidth (msg/sec): %.3f\n\n", res.MsgsPerSec)
+				fmt.Printf("Bandwidth (msg/sec): %.3f\n\n", res.MsgsPerSec)
+			}
 		}
 		fmt.Printf("========= TOTAL (%d) =========\n", len(results))
 		fmt.Printf("Total Ratio:                 %.3f (%d/%d)\n", totals.Ratio, totals.Successes, totals.Successes+totals.Failures)
