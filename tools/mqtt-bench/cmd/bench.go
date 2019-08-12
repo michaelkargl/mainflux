@@ -21,13 +21,14 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
+// Execute - main command
 func Execute() {
 	if err := benchCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalf(err.Error())
 	}
 }
 
+// Config - command optiopns from file configuration
 type Config struct {
 	Broker     string `toml:"broker"`
 	QoS        int    `toml:"qos"`
@@ -58,6 +59,8 @@ type connection struct {
 	MTLSCert  string `json:"MTLSCert"`
 	MTLSKey   string `json:"MTLSKey"`
 }
+
+// Connections - representing connections from channels file
 type Connections struct {
 	Connection []connection
 }
