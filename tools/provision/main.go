@@ -26,7 +26,7 @@ type connection struct {
 	ThingID   string
 	ThingKey  string
 	MTLSCert  string
-	MtlsKey   string
+	MTLSKey   string
 }
 type connections struct {
 	Connection []connection
