@@ -124,8 +124,11 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 
-		viper.Unmarshal(&c)
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		err = viper.Unmarshal(&c)
+		if err != nil {
+			log.Printf("failed to load config - %s", err.Error())
+		}
+		log.Printf("config file: %s", viper.ConfigFileUsed())
 	}
 }
 
@@ -315,7 +318,10 @@ func printResults(results []*res.RunResults, totals *res.TotalResults, format st
 			Runs:   results,
 			Totals: totals,
 		}
-		data, _ := json.Marshal(jr)
+		data, err := json.Marshal(jr)
+		if err != nil {
+			log.Printf("Failed to prepare results for printing - %s", err.Error())
+		}
 		var out bytes.Buffer
 		json.Indent(&out, data, "", "\t")
 

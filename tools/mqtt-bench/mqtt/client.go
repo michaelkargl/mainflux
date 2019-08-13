@@ -160,7 +160,10 @@ func (c *Client) pubMessages(in, out chan *message, doneGen chan bool, donePub c
 				m.Payload.ID = clientID
 				m.Payload.Sent = m.Sent
 
-				pload, _ := json.Marshal(m.Payload)
+				pload, err := json.Marshal(m.Payload)
+				if err != nil {
+					log.Printf("Failed to marshal payload - %s", err.Error())
+				}
 				token := client.Publish(m.Topic, m.QoS, c.Retain, pload)
 				token.Wait()
 				if token.Error() != nil {
