@@ -16,18 +16,18 @@ import (
 
 type runResults struct {
 	ID             string  `json:"id"`
-	Successes      int64   `json:"successes"`
-	Failures       int64   `json:"failures"`
-	RunTime        float64 `json:"run_time"`
-	MsgTimeMin     float64 `json:"msg_time_min"`
-	MsgTimeMax     float64 `json:"msg_time_max"`
-	MsgTimeMean    float64 `json:"msg_time_mean"`
-	MsgTimeStd     float64 `json:"msg_time_std"`
-	MsgDelTimeMin  float64 `json:"msg_del_time_min"`
-	MsgDelTimeMax  float64 `json:"msg_del_time_max"`
-	MsgDelTimeMean float64 `json:"msg_del_time_mean"`
-	MsgDelTimeStd  float64 `json:"msg_del_time_std"`
-	MsgsPerSec     float64 `json:"msgs_per_sec"`
+	successes      int64   `json:"successes"`
+	failures       int64   `json:"failures"`
+	runTime        float64 `json:"run_time"`
+	msgTimeMin     float64 `json:"msg_time_min"`
+	msgTimeMax     float64 `json:"msg_time_max"`
+	msgTimeMean    float64 `json:"msg_time_mean"`
+	msgTimeStd     float64 `json:"msg_time_std"`
+	msgDelTimeMin  float64 `json:"msg_del_time_min"`
+	msgDelTimeMax  float64 `json:"msg_del_time_max"`
+	msgDelTimeMean float64 `json:"msg_del_time_mean"`
+	msgDelTimeStd  float64 `json:"msg_del_time_std"`
+	msgsPerSec     float64 `json:"msgs_per_sec"`
 }
 
 type subTimes map[string][]float64
@@ -62,58 +62,58 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, subTi
 	runTimes := make([]float64, len(results))
 	bws := make([]float64, len(results))
 
-	totals.TotalRunTime = totalTime.Seconds()
+	totals.totalRunTime = totalTime.Seconds()
 
-	totals.MsgTimeMin = results[0].MsgTimeMin
+	totals.msgTimeMin = results[0].msgTimeMin
 	for i, res := range results {
 		if len(*subTimes) > 0 {
 			times := mat.NewDense(1, len((*subTimes)[res.ID]), (*subTimes)[res.ID])
 
-			subTimeRunResults.MsgTimeMin = mat.Min(times)
-			subTimeRunResults.MsgTimeMax = mat.Max(times)
-			subTimeRunResults.MsgTimeMean = stat.Mean((*subTimes)[res.ID], nil)
-			subTimeRunResults.MsgTimeStd = stat.StdDev((*subTimes)[res.ID], nil)
+			subTimeRunResults.msgTimeMin = mat.Min(times)
+			subTimeRunResults.msgTimeMax = mat.Max(times)
+			subTimeRunResults.msgTimeMean = stat.Mean((*subTimes)[res.ID], nil)
+			subTimeRunResults.msgTimeStd = stat.StdDev((*subTimes)[res.ID], nil)
 
 		}
-		res.MsgDelTimeMin = subTimeRunResults.MsgTimeMin
-		res.MsgDelTimeMax = subTimeRunResults.MsgTimeMax
-		res.MsgDelTimeMean = subTimeRunResults.MsgTimeMean
-		res.MsgDelTimeStd = subTimeRunResults.MsgTimeStd
+		res.msgDelTimeMin = subTimeRunResults.msgTimeMin
+		res.msgDelTimeMax = subTimeRunResults.msgTimeMax
+		res.msgDelTimeMean = subTimeRunResults.msgTimeMean
+		res.msgDelTimeStd = subTimeRunResults.msgTimeStd
 
-		totals.Successes += res.Successes
-		totals.Failures += res.Failures
-		totals.TotalMsgsPerSec += res.MsgsPerSec
+		totals.successes += res.successes
+		totals.failures += res.failures
+		totals.totalMsgsPerSec += res.msgsPerSec
 
-		if res.MsgTimeMin < totals.MsgTimeMin {
-			totals.MsgTimeMin = res.MsgTimeMin
+		if res.msgTimeMin < totals.msgTimeMin {
+			totals.msgTimeMin = res.msgTimeMin
 		}
 
-		if res.MsgTimeMax > totals.MsgTimeMax {
-			totals.MsgTimeMax = res.MsgTimeMax
+		if res.msgTimeMax > totals.msgTimeMax {
+			totals.msgTimeMax = res.msgTimeMax
 		}
 
-		if subTimeRunResults.MsgTimeMin < totals.MsgDelTimeMin {
-			totals.MsgDelTimeMin = subTimeRunResults.MsgTimeMin
+		if subTimeRunResults.msgTimeMin < totals.msgDelTimeMin {
+			totals.msgDelTimeMin = subTimeRunResults.msgTimeMin
 		}
 
-		if subTimeRunResults.MsgTimeMax > totals.MsgDelTimeMax {
-			totals.MsgDelTimeMax = subTimeRunResults.MsgTimeMax
+		if subTimeRunResults.msgTimeMax > totals.msgDelTimeMax {
+			totals.msgDelTimeMax = subTimeRunResults.msgTimeMax
 		}
 
-		msgTimeMeansDelivered[i] = subTimeRunResults.MsgTimeMean
-		msgTimeMeans[i] = res.MsgTimeMean
-		msgsPerSecs[i] = res.MsgsPerSec
-		runTimes[i] = res.RunTime
-		bws[i] = res.MsgsPerSec
+		msgTimeMeansDelivered[i] = subTimeRunResults.msgTimeMean
+		msgTimeMeans[i] = res.msgTimeMean
+		msgsPerSecs[i] = res.msgsPerSec
+		runTimes[i] = res.runTime
+		bws[i] = res.msgsPerSec
 	}
 
-	totals.Ratio = float64(totals.Successes) / float64(totals.Successes+totals.Failures)
-	totals.AvgMsgsPerSec = stat.Mean(msgsPerSecs, nil)
-	totals.AvgRunTime = stat.Mean(runTimes, nil)
-	totals.MsgDelTimeMeanAvg = stat.Mean(msgTimeMeansDelivered, nil)
-	totals.MsgDelTimeMeanStd = stat.StdDev(msgTimeMeansDelivered, nil)
-	totals.MsgTimeMeanAvg = stat.Mean(msgTimeMeans, nil)
-	totals.MsgTimeMeanStd = stat.StdDev(msgTimeMeans, nil)
+	totals.ratio = float64(totals.successes) / float64(totals.successes+totals.failures)
+	totals.avgMsgsPerSec = stat.Mean(msgsPerSecs, nil)
+	totals.avgRunTime = stat.Mean(runTimes, nil)
+	totals.msgDelTimeMeanAvg = stat.Mean(msgTimeMeansDelivered, nil)
+	totals.msgDelTimeMeanStd = stat.StdDev(msgTimeMeansDelivered, nil)
+	totals.msgTimeMeanAvg = stat.Mean(msgTimeMeans, nil)
+	totals.msgTimeMeanStd = stat.StdDev(msgTimeMeans, nil)
 
 	return totals
 }
@@ -137,27 +137,27 @@ func printResults(results []*runResults, totals *totalResults, format string, qu
 		if !quiet {
 			for _, res := range results {
 				fmt.Printf("======= CLIENT %s =======\n", res.ID)
-				fmt.Printf("Ratio:               %.3f (%d/%d)\n", float64(res.Successes)/float64(res.Successes+res.Failures), res.Successes, res.Successes+res.Failures)
-				fmt.Printf("Runtime (s):         %.3f\n", res.RunTime)
-				fmt.Printf("Msg time min (us):   %.3f\n", res.MsgTimeMin)
-				fmt.Printf("Msg time max (us):   %.3f\n", res.MsgTimeMax)
-				fmt.Printf("Msg time mean (us):  %.3f\n", res.MsgTimeMean)
-				fmt.Printf("Msg time std (us):   %.3f\n", res.MsgTimeStd)
+				fmt.Printf("Ratio:               %.3f (%d/%d)\n", float64(res.successes)/float64(res.successes+res.failures), res.successes, res.successes+res.failures)
+				fmt.Printf("Runtime (s):         %.3f\n", res.runTime)
+				fmt.Printf("Msg time min (us):   %.3f\n", res.msgTimeMin)
+				fmt.Printf("Msg time max (us):   %.3f\n", res.msgTimeMax)
+				fmt.Printf("Msg time mean (us):  %.3f\n", res.msgTimeMean)
+				fmt.Printf("Msg time std (us):   %.3f\n", res.msgTimeStd)
 
-				fmt.Printf("Bandwidth (msg/sec): %.3f\n\n", res.MsgsPerSec)
+				fmt.Printf("Bandwidth (msg/sec): %.3f\n\n", res.msgsPerSec)
 			}
 		}
 		fmt.Printf("========= TOTAL (%d) =========\n", len(results))
-		fmt.Printf("Total Ratio:                 %.3f (%d/%d)\n", totals.Ratio, totals.Successes, totals.Successes+totals.Failures)
-		fmt.Printf("Total Runtime (sec):         %.3f\n", totals.TotalRunTime)
-		fmt.Printf("Average Runtime (sec):       %.3f\n", totals.AvgRunTime)
-		fmt.Printf("Msg time min (us):           %.3f\n", totals.MsgTimeMin)
-		fmt.Printf("Msg time max (us):           %.3f\n", totals.MsgTimeMax)
-		fmt.Printf("Msg time mean mean (us):     %.3f\n", totals.MsgTimeMeanAvg)
-		fmt.Printf("Msg time mean std (us):      %.3f\n", totals.MsgTimeMeanStd)
+		fmt.Printf("Total Ratio:                 %.3f (%d/%d)\n", totals.ratio, totals.successes, totals.successes+totals.failures)
+		fmt.Printf("Total Runtime (sec):         %.3f\n", totals.totalRunTime)
+		fmt.Printf("Average Runtime (sec):       %.3f\n", totals.avgRunTime)
+		fmt.Printf("Msg time min (us):           %.3f\n", totals.msgTimeMin)
+		fmt.Printf("Msg time max (us):           %.3f\n", totals.msgTimeMax)
+		fmt.Printf("Msg time mean mean (us):     %.3f\n", totals.msgTimeMeanAvg)
+		fmt.Printf("Msg time mean std (us):      %.3f\n", totals.msgTimeMeanStd)
 
-		fmt.Printf("Average Bandwidth (msg/sec): %.3f\n", totals.AvgMsgsPerSec)
-		fmt.Printf("Total Bandwidth (msg/sec):   %.3f\n", totals.TotalMsgsPerSec)
+		fmt.Printf("Average Bandwidth (msg/sec): %.3f\n", totals.avgMsgsPerSec)
+		fmt.Printf("Total Bandwidth (msg/sec):   %.3f\n", totals.totalMsgsPerSec)
 	}
 	return
 }
