@@ -119,6 +119,9 @@ func Provision(conf Config) {
 	//  Create things and channels
 	things := make([]*sdk.Thing, conf.Num)
 	channels := make([]*string, conf.Num)
+
+	fmt.Println("# list of things that can be connected to MQTT broker")
+
 	for i := 0; i < conf.Num; i++ {
 		tid, err := s.CreateThing(sdk.Thing{Name: fmt.Sprintf("%s-thing-%d", conf.Prefix, i)}, token)
 		if err != nil {
@@ -208,6 +211,8 @@ func Provision(conf Config) {
 	}
 
 	var wg sync.WaitGroup
+	fmt.Println("# list of channels that things can publish to")
+	fmt.Println("# each channel is connected to each thing from things list")
 	for i := 0; i < conf.Num; i++ {
 		for j := 0; j < conf.Num; j++ {
 			wg.Add(1)
