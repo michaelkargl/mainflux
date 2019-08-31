@@ -112,12 +112,13 @@ func Benchmark(cfg Config) {
 	resCh := make(chan *runResults)
 	done := make(chan bool)
 
+	start := time.Now()
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
 	// Subscribers
 	for i := 0; i < cfg.Test.Subs; i++ {
-		mfChann := mf.Channels[i%n]
+		mfConn := mf.Channels[i%n]
 		mfThing := mf.Things[i%n]
 
 		if cfg.MQTT.TLS.MTLS {
@@ -132,7 +133,7 @@ func Benchmark(cfg Config) {
 			BrokerURL:  cfg.MQTT.Broker.URL,
 			BrokerUser: mfThing.ThingID,
 			BrokerPass: mfThing.ThingKey,
-			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfChann.ChannelID),
+			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfConn.ChannelID),
 			MsgSize:    cfg.MQTT.Message.Size,
 			MsgCount:   cfg.Test.Count,
 			MsgQoS:     byte(cfg.MQTT.Message.QoS),
@@ -155,7 +156,7 @@ func Benchmark(cfg Config) {
 	start := time.Now()
 	// Publishers
 	for i := 0; i < cfg.Test.Pubs; i++ {
-		mfChann := mf.Channels[i%n]
+		mfConn := mf.Channels[i%n]
 		mfThing := mf.Things[i%n]
 
 		if cfg.MQTT.TLS.MTLS {
@@ -170,7 +171,7 @@ func Benchmark(cfg Config) {
 			BrokerURL:  cfg.MQTT.Broker.URL,
 			BrokerUser: mfThing.ThingID,
 			BrokerPass: mfThing.ThingKey,
-			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfChann.ChannelID),
+			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfConn.ChannelID),
 			MsgSize:    cfg.MQTT.Message.Size,
 			MsgCount:   cfg.Test.Count,
 			MsgQoS:     byte(cfg.MQTT.Message.QoS),
