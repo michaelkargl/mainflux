@@ -76,8 +76,8 @@ type Config struct {
 
 // JSONResults are used to export results as a JSON document
 type JSONResults struct {
-	Runs   []*RunResults `json:"runs"`
-	Totals *TotalResults `json:"totals"`
+	Runs   []*runResults `json:"runs"`
+	Totals *totalResults `json:"totals"`
 }
 
 // Benchmark - main benckhmarking function
@@ -86,7 +86,7 @@ func Benchmark(cfg Config) {
 	var err error
 
 	checkConnection(cfg.MQTT.Broker.URL, 1)
-	subTimes := make(SubTimes)
+	subTimes := make(subTimes)
 	var caByte []byte
 	if cfg.MQTT.TLS.MTLS {
 		caFile, err := os.Open(cfg.MQTT.TLS.CA)
@@ -105,7 +105,7 @@ func Benchmark(cfg Config) {
 		log.Fatalf("Cannot load Mainflux connections config %s \nuse tools/provision to create file", cfg.Mf.ConnFile)
 	}
 
-	resCh := make(chan *RunResults)
+	resCh := make(chan *runResults)
 	done := make(chan bool)
 
 	start := time.Now()
@@ -181,9 +181,9 @@ func Benchmark(cfg Config) {
 	}
 
 	// Collect the results
-	var results []*RunResults
+	var results []*runResults
 	if cfg.Test.Pubs > 0 {
-		results = make([]*RunResults, cfg.Test.Pubs)
+		results = make([]*runResults, cfg.Test.Pubs)
 	}
 
 	for i := 0; i < cfg.Test.Pubs; i++ {
