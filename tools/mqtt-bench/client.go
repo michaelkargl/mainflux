@@ -91,12 +91,12 @@ func (c *Client) runPublisher(r chan *runResults) {
 			// Calculate results
 			duration := time.Now().Sub(started)
 			timeMatrix := mat.NewDense(1, len(times), times)
-			runResults.msgTimeMin = mat.Min(timeMatrix)
-			runResults.msgTimeMax = mat.Max(timeMatrix)
-			runResults.msgTimeMean = stat.Mean(times, nil)
-			runResults.msgTimeStd = stat.StdDev(times, nil)
+			runResults.MsgTimeMin = mat.Min(timeMatrix)
+			runResults.MsgTimeMax = mat.Max(timeMatrix)
+			runResults.MsgTimeMean = stat.Mean(times, nil)
+			runResults.MsgTimeStd = stat.StdDev(times, nil)
 			runResults.runTime = duration.Seconds()
-			runResults.msgsPerSec = float64(runResults.successes) / duration.Seconds()
+			runResults.MsgsPerSec = float64(runResults.successes) / duration.Seconds()
 
 			// Report results and exit
 			r <- runResults
