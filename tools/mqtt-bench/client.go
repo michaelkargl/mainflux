@@ -81,9 +81,9 @@ func (c *Client) runPublisher(r chan *runResults) {
 		case m := <-pubMsgs:
 			cid := m.ID
 			if m.Error {
-				runResults.failures++
+				runResults.Failures++
 			} else {
-				runResults.successes++
+				runResults.Successes++
 				runResults.ID = cid
 				times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microseconds
 			}
@@ -95,8 +95,8 @@ func (c *Client) runPublisher(r chan *runResults) {
 			runResults.MsgTimeMax = mat.Max(timeMatrix)
 			runResults.MsgTimeMean = stat.Mean(times, nil)
 			runResults.MsgTimeStd = stat.StdDev(times, nil)
-			runResults.runTime = duration.Seconds()
-			runResults.MsgsPerSec = float64(runResults.successes) / duration.Seconds()
+			runResults.RunTime = duration.Seconds()
+			runResults.MsgsPerSec = float64(runResults.Successes) / duration.Seconds()
 
 			// Report results and exit
 			r <- runResults
