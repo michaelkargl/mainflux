@@ -112,7 +112,6 @@ func Benchmark(cfg Config) {
 	resCh := make(chan *runResults)
 	done := make(chan bool)
 
-	start := time.Now()
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
