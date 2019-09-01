@@ -141,10 +141,27 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done *chan bo
 		log.Printf("Client %v had lost connection to the broker: %s\n", c.ID, reason.Error())
 	}
 	c.connect(onConnected, connLost)
+	i := 0
 
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
+
+		i++
 		mp := messagePayload{}
 		err := json.Unmarshal(msg.Payload(), &mp)
+		arrival := time.Now()
+		//times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microseconds
+		arrivalTimes, ok := (*subTimes)[mp.ID]
+		if !ok {
+			clientArrivalTimes := make([]float64, 50)
+
+			arrivalTimes = &clientArrivalTimes
+			(*subTimes)[mp.ID] = arrivalTimes
+
+		}
+		// remove - fmt.Printf("%d dif %f:\n", i, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
+		*arrivalTimes = append(*arrivalTimes, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
+
+		*doneSub <- true
 		if err != nil {
 			log.Printf("Client %s failed to decode message\n", clientID)
 		}
@@ -167,6 +184,7 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 				m.Sent = time.Now()
 				m.ID = clientID
 				m.Payload.Sent = m.Sent
+				m.Payload.ID = clientID
 
 				pload, err := json.Marshal(m.Payload)
 				if err != nil {

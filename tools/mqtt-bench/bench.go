@@ -192,8 +192,27 @@ func Benchmark(cfg Config) {
 		results = make([]*runResults, cfg.Test.Pubs)
 	}
 
-	for i := 0; i < cfg.Test.Pubs; i++ {
-		results[i] = <-resCh
+	k, j := 0
+	for i := 0; i < cfg.Test.Pubs*cfg.Test.Count; i++ {
+
+		select {
+		case result := <-resCh:
+			{
+				if k > cfg.Test.Pubs {
+					log.Printf("Something went wrong with messages")
+				}
+				results[k] = result
+				k++
+			}
+		case <-done:
+			{
+				// every time subscriber receives a message it will signal done
+				if j >= cfg.Test.Pubs*cfg.Test.Subs*cfg.Test.Count {
+					break
+				}
+				j++
+			}
+		}
 	}
 
 	totalTime := time.Now().Sub(start)
