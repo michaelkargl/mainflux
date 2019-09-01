@@ -112,7 +112,6 @@ func Benchmark(cfg Config) {
 	resCh := make(chan *runResults)
 	done := make(chan bool)
 
-	start := time.Now()
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
@@ -153,6 +152,7 @@ func Benchmark(cfg Config) {
 
 	wg.Wait()
 
+	start := time.Now()
 	// Publishers
 	for i := 0; i < cfg.Test.Pubs; i++ {
 		mfConn := mf.Channels[i%n]
