@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cisco/senml"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	mat "gonum.org/v1/gonum/mat"
 	stat "gonum.org/v1/gonum/stat"
@@ -27,7 +28,7 @@ type Client struct {
 	BrokerUser string
 	BrokerPass string
 	MsgTopic   string
-	Message    string
+	Message    func(cid string, time float64, f func() senml.SenML) ([]byte, error)
 	MsgSize    int
 	MsgCount   int
 	MsgQoS     byte
@@ -106,11 +107,11 @@ func (c *Client) runPublisher(r chan *runResults) {
 }
 
 // Subscriber
-func (c *Client) runSubscriber(wg *sync.WaitGroup, subTimes *subTimes, done *chan bool) {
+func (c *Client) runSubscriber(wg *sync.WaitGroup, subTimes *subTimes, done, doneSub *chan bool) {
 	defer wg.Done()
 
 	// Start subscriber
-	c.subscribe(wg, subTimes, done)
+	c.subscribe(wg, subTimes, done, doneSub)
 }
 
 func (c *Client) generate(ch chan *message, done chan bool) {
@@ -127,7 +128,7 @@ func (c *Client) generate(ch chan *message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done *chan bool) {
+func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done, doneSub *chan bool) {
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 
@@ -139,6 +140,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done *chan bo
 
 	connLost := func(client mqtt.Client, reason error) {
 		log.Printf("Client %v had lost connection to the broker: %s\n", c.ID, reason.Error())
+		*doneSub <- true
 	}
 	c.connect(onConnected, connLost)
 	i := 0
@@ -161,7 +163,10 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done *chan bo
 		// remove - fmt.Printf("%d dif %f:\n", i, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
 		*arrivalTimes = append(*arrivalTimes, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
 
-		*doneSub <- true
+		if i == c.MsgCount {
+			*doneSub <- true
+		}
+
 		if err != nil {
 			log.Printf("Client %s failed to decode message\n", clientID)
 		}

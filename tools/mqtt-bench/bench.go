@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/cisco/senml"
 )
 
 // Keep struct names exported, otherwise Viper unmarshaling won't work
@@ -22,10 +23,11 @@ type mqttBrokerConfig struct {
 }
 
 type mqttMessageConfig struct {
-	Size   int    `toml:"size" mapstructure:"size"`
-	Format string `toml:"format" mapstructure:"format"`
-	QoS    int    `toml:"qos" mapstructure:"qos"`
-	Retain bool   `toml:"retain" mapstructure:"retain"`
+	Size    int    `toml:"size" mapstructure:"size"`
+	Payload string `toml:"payload" mapstructure:"payload"`
+	Format  string `toml:"format" mapstructure:"format"`
+	QoS     int    `toml:"qos" mapstructure:"qos"`
+	Retain  bool   `toml:"retain" mapstructure:"retain"`
 }
 
 type mqttTLSConfig struct {
@@ -102,8 +104,6 @@ func Benchmark(cfg Config) {
 		caByte, _ = ioutil.ReadAll(caFile)
 	}
 
-	payload := string(make([]byte, cfg.MQTT.Message.Size))
-
 	mf := mainflux{}
 	if _, err := toml.DecodeFile(cfg.Mf.ConnFile, &mf); err != nil {
 		log.Fatalf("Cannot load Mainflux connections config %s \nuse tools/provision to create file", cfg.Mf.ConnFile)
@@ -111,6 +111,7 @@ func Benchmark(cfg Config) {
 
 	resCh := make(chan *runResults)
 	done := make(chan bool)
+	doneSub := make(chan bool)
 
 	n := len(mf.Channels)
 	var cert tls.Certificate
@@ -142,18 +143,25 @@ func Benchmark(cfg Config) {
 			CA:         caByte,
 			ClientCert: cert,
 			Retain:     cfg.MQTT.Message.Retain,
-			Message:    payload,
+			Message:    nil,
 		}
 
 		wg.Add(1)
 
-		go c.runSubscriber(&wg, &subTimes, &done)
+		go c.runSubscriber(&wg, &subTimes, &done, &doneSub)
 	}
 
 	wg.Wait()
 
-	start := time.Now()
 	// Publishers
+	start := time.Now()
+	if len(cfg.MQTT.Message) == 0 {
+		payload := string(make([]byte, cfg.MQTT.Message.Size))
+	} else {
+
+	}
+
+	msg := prepareSenML(cfg.Test.Count, cfg.MQTT.Message)
 	for i := 0; i < cfg.Test.Pubs; i++ {
 		mfConn := mf.Channels[i%n]
 		mfThing := mf.Things[i%n]
@@ -192,7 +200,8 @@ func Benchmark(cfg Config) {
 		results = make([]*runResults, cfg.Test.Pubs)
 	}
 
-	k, j := 0
+	k := 0
+	j := 0
 	for i := 0; i < cfg.Test.Pubs*cfg.Test.Count; i++ {
 
 		select {
@@ -206,8 +215,8 @@ func Benchmark(cfg Config) {
 			}
 		case <-done:
 			{
-				// every time subscriber receives a message it will signal done
-				if j >= cfg.Test.Pubs*cfg.Test.Subs*cfg.Test.Count {
+				// every time subscriber receives MsgCount messages it will signal done
+				if j >= cfg.Test.Subs {
 					break
 				}
 				j++
@@ -223,4 +232,38 @@ func Benchmark(cfg Config) {
 
 	// Print sats
 	printResults(results, totals, cfg.MQTT.Message.Format, cfg.Log.Quiet)
+}
+
+func prepareSenML(sz int, msg senml.SenMLRecord) senml.SenML {
+
+	t := (float64)(time.Now().Nanosecond())
+	timeStamp := senml.SenMLRecord{
+		BaseName: "",
+		Name:     "timeSent",
+		Value:    &t,
+	}
+
+	records := make([]senml.SenMLRecord, sz)
+	records[0] = timeStamp
+
+	for i := 1; i < sz; i++ {
+		records[i] = msg
+	}
+
+	s := senml.SenML{
+		Records: records,
+	}
+
+	return s
+}
+
+func getPayload(cid string, time float64, f func() senml.SenML) ([]byte, error) {
+	s := f()
+	s.Records[0].Value = &time
+	s.Records[0].BaseName = cid
+	payload, err := senml.Encode(s, senml.JSON, senml.OutputOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return payload, nil
 }

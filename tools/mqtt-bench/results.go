@@ -30,7 +30,7 @@ type runResults struct {
 	MsgsPerSec     float64 `json:"msgs_per_sec"`
 }
 
-type subTimes map[string][]float64
+type subTimes map[string](*[]float64)
 
 type totalResults struct {
 	Ratio             float64 `json:"ratio"`
