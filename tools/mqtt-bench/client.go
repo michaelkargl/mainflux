@@ -29,6 +29,7 @@ type Client struct {
 	BrokerPass string
 	MsgTopic   string
 	Message    func(cid string, time float64, f func() senml.SenML) ([]byte, error)
+	GetSenML   func() senml.SenML
 	MsgSize    int
 	MsgCount   int
 	MsgQoS     byte
@@ -148,20 +149,24 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done, doneSub
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
 		i++
-		mp := messagePayload{}
+		//mp := messagePayload{}
+		mp := senml.SenML{}
 		err := json.Unmarshal(msg.Payload(), &mp)
 		arrival := time.Now()
-		//times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microseconds
-		arrivalTimes, ok := (*subTimes)[mp.ID]
+		//times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microsecondsme
+		id := mp.Records[0].BaseName
+		time := mp.Records[0].Time
+		arrivalTimes, ok := (*subTimes)[id]
 		if !ok {
 			clientArrivalTimes := make([]float64, 50)
 
 			arrivalTimes = &clientArrivalTimes
-			(*subTimes)[mp.ID] = arrivalTimes
+			(*subTimes)[id] = arrivalTimes
 
 		}
 		// remove - fmt.Printf("%d dif %f:\n", i, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
-		*arrivalTimes = append(*arrivalTimes, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
+
+		*arrivalTimes = append(*arrivalTimes, float64(arrival.Nanosecond())-time)
 
 		if i == c.MsgCount {
 			*doneSub <- true
@@ -188,10 +193,7 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 			case m := <-in:
 				m.Sent = time.Now()
 				m.ID = clientID
-				m.Payload.Sent = m.Sent
-				m.Payload.ID = clientID
-
-				pload, err := json.Marshal(m.Payload)
+				pload, err := c.Message(m.ID, float64(m.Sent.Nanosecond()), c.GetSenML)
 				if err != nil {
 					log.Printf("Failed to marshal payload - %s", err.Error())
 				}

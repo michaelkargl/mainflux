@@ -5,6 +5,7 @@ package bench
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -91,7 +92,7 @@ func Benchmark(cfg Config) {
 	var wg sync.WaitGroup
 	var err error
 
-	checkConnection(cfg.MQTT.Broker.URL, 1)
+	//checkConnection(cfg.MQTT.Broker.URL, 1)
 	subTimes := make(subTimes)
 	var caByte []byte
 	if cfg.MQTT.TLS.MTLS {
@@ -116,6 +117,10 @@ func Benchmark(cfg Config) {
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
+	msg := prepareSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
+	getSenML := func() senml.SenML {
+		return msg
+	}
 	// Subscribers
 	for i := 0; i < cfg.Test.Subs; i++ {
 		mfConn := mf.Channels[i%n]
@@ -155,13 +160,7 @@ func Benchmark(cfg Config) {
 
 	// Publishers
 	start := time.Now()
-	if len(cfg.MQTT.Message) == 0 {
-		payload := string(make([]byte, cfg.MQTT.Message.Size))
-	} else {
 
-	}
-
-	msg := prepareSenML(cfg.Test.Count, cfg.MQTT.Message)
 	for i := 0; i < cfg.Test.Pubs; i++ {
 		mfConn := mf.Channels[i%n]
 		mfThing := mf.Things[i%n]
@@ -188,7 +187,8 @@ func Benchmark(cfg Config) {
 			CA:         caByte,
 			ClientCert: cert,
 			Retain:     cfg.MQTT.Message.Retain,
-			Message:    payload,
+			Message:    getPayload,
+			GetSenML:   getSenML,
 		}
 
 		go c.runPublisher(resCh)
@@ -234,20 +234,53 @@ func Benchmark(cfg Config) {
 	printResults(results, totals, cfg.MQTT.Message.Format, cfg.Log.Quiet)
 }
 
-func prepareSenML(sz int, msg senml.SenMLRecord) senml.SenML {
+func prepareSenML(sz int, payload string) senml.SenML {
 
 	t := (float64)(time.Now().Nanosecond())
 	timeStamp := senml.SenMLRecord{
-		BaseName: "",
+		BaseName: "pub-2019-08-31T12:38:25.139715762+02:00-57",
 		Name:     "timeSent",
 		Value:    &t,
 	}
 
-	records := make([]senml.SenMLRecord, sz)
-	records[0] = timeStamp
+	tsByte, err := json.Marshal(timeStamp)
+	if err != nil {
+		log.Fatalf("Failed to create test message")
+	}
 
-	for i := 1; i < sz; i++ {
-		records[i] = msg
+	pload := []byte(payload)
+	if len(payload) == 0 && sz > len(tsByte) {
+		pload = make([]byte, sz-len(tsByte))
+	}
+
+	sml := senml.SenMLRecord{}
+	err = json.Unmarshal(pload, &sml)
+	if err != nil {
+		log.Println("cannot unmarshal payload")
+	}
+
+	msgByte, err := json.Marshal(sml)
+	if err != nil {
+		log.Fatalf("Failed to create test message")
+	}
+
+	// how many records to make messae long sz bytes
+	n := (sz-len(tsByte))/len(msgByte) + 1
+	if sz < len(tsByte) {
+		n = 1
+	}
+
+	records := make([]senml.SenMLRecord, n)
+	records[0] = timeStamp
+	for i := 1; i < n; i++ {
+		// is this needed
+		// i think we need id to be saved with db writer to t
+		sml.Time = float64(time.Now().Nanosecond())
+		records[i] = sml
+	}
+
+	for i := 1; i < n; i++ {
+		log.Printf("%f\n", records[i].Time)
 	}
 
 	s := senml.SenML{
