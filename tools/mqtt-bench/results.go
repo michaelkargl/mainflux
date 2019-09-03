@@ -30,7 +30,7 @@ type runResults struct {
 	MsgsPerSec     float64 `json:"msgs_per_sec"`
 }
 
-type subTimes map[string](*[]float64)
+type subsResults map[string](*[]float64)
 
 type totalResults struct {
 	Ratio             float64 `json:"ratio"`
@@ -50,7 +50,7 @@ type totalResults struct {
 	AvgMsgsPerSec     float64 `json:"avg_msgs_per_sec"`
 }
 
-func calculateTotalResults(results []*runResults, totalTime time.Duration, subTimes *subTimes) *totalResults {
+func calculateTotalResults(results []*runResults, totalTime time.Duration, subsResults *subsResults) *totalResults {
 	if results == nil || len(results) < 1 {
 		return nil
 	}
@@ -66,13 +66,13 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, subTi
 
 	totals.MsgTimeMin = results[0].MsgTimeMin
 	for i, res := range results {
-		if len(*subTimes) > 0 {
-			times := mat.NewDense(1, len(*((*subTimes)[res.ID])), *((*subTimes)[res.ID]))
+		if len(*subsResults) > 0 {
+			times := mat.NewDense(1, len(*((*subsResults)[res.ID])), *((*subsResults)[res.ID]))
 
 			subTimeRunResults.MsgTimeMin = mat.Min(times)
 			subTimeRunResults.MsgTimeMax = mat.Max(times)
-			subTimeRunResults.MsgTimeMean = stat.Mean(*((*subTimes)[res.ID]), nil)
-			subTimeRunResults.MsgTimeStd = stat.StdDev(*((*subTimes)[res.ID]), nil)
+			subTimeRunResults.MsgTimeMean = stat.Mean(*((*subsResults)[res.ID]), nil)
+			subTimeRunResults.MsgTimeStd = stat.StdDev(*((*subsResults)[res.ID]), nil)
 
 		}
 		res.MsgDelTimeMin = subTimeRunResults.MsgTimeMin

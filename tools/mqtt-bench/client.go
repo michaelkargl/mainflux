@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -108,11 +107,11 @@ func (c *Client) runPublisher(r chan *runResults) {
 }
 
 // Subscriber
-func (c *Client) runSubscriber(wg *sync.WaitGroup, subTimes *subTimes, done, doneSub *chan bool) {
+func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, done, doneSub *chan bool) {
 	defer wg.Done()
 
 	// Start subscriber
-	c.subscribe(wg, subTimes, done, doneSub)
+	c.subscribe(wg, subsResults, done, doneSub)
 }
 
 func (c *Client) generate(ch chan *message, done chan bool) {
@@ -129,7 +128,7 @@ func (c *Client) generate(ch chan *message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done, doneSub *chan bool) {
+func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, done, doneSub *chan bool) {
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 
@@ -150,27 +149,33 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subTimes *subTimes, done, doneSub
 
 		i++
 		//mp := messagePayload{}
-		mp := senml.SenML{}
-		err := json.Unmarshal(msg.Payload(), &mp)
-		arrival := time.Now()
+		//mp := senml.SenML{}
+		arrival := time.Now().UnixNano()
+		log.Printf("pld: %s\n", string(msg.Payload()))
+		mp, err := senml.Decode(msg.Payload(), senml.JSON)
+		if err != nil {
+			log.Printf("Failed to decode message %s\n", err.Error())
+		}
+
 		//times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microsecondsme
 		id := mp.Records[0].BaseName
-		time := mp.Records[0].Time
-		arrivalTimes, ok := (*subTimes)[id]
+		timeSent := *mp.Records[0].Value
+		arrivalTimes, ok := (*subsResults)[id]
 		if !ok {
 			clientArrivalTimes := make([]float64, 50)
-
 			arrivalTimes = &clientArrivalTimes
-			(*subTimes)[id] = arrivalTimes
+			(*subsResults)[id] = arrivalTimes
 
 		}
 		// remove - fmt.Printf("%d dif %f:\n", i, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
 
-		*arrivalTimes = append(*arrivalTimes, float64(arrival.Nanosecond())-time)
+		*arrivalTimes = append(*arrivalTimes, float64(arrival)-timeSent)
 
-		if i == c.MsgCount {
+		if i == c.MsgCount-1 {
+			log.Printf("Subscriber %s has finished receiving", c.ID)
 			*doneSub <- true
 		}
+		log.Printf("recieved msg %d in %f \n", i, float64(arrival)-timeSent)
 
 		if err != nil {
 			log.Printf("Client %s failed to decode message\n", clientID)
@@ -193,7 +198,7 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 			case m := <-in:
 				m.Sent = time.Now()
 				m.ID = clientID
-				pload, err := c.Message(m.ID, float64(m.Sent.Nanosecond()), c.GetSenML)
+				pload, err := c.Message(m.ID, float64(m.Sent.UnixNano()), c.GetSenML)
 				if err != nil {
 					log.Printf("Failed to marshal payload - %s", err.Error())
 				}

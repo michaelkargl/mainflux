@@ -93,7 +93,7 @@ func Benchmark(cfg Config) {
 	var err error
 
 	//checkConnection(cfg.MQTT.Broker.URL, 1)
-	subTimes := make(subTimes)
+	subsResults := make(subsResults)
 	var caByte []byte
 	if cfg.MQTT.TLS.MTLS {
 		caFile, err := os.Open(cfg.MQTT.TLS.CA)
@@ -153,7 +153,7 @@ func Benchmark(cfg Config) {
 
 		wg.Add(1)
 
-		go c.runSubscriber(&wg, &subTimes, &done, &doneSub)
+		go c.runSubscriber(&wg, &subsResults, &done, &doneSub)
 	}
 
 	wg.Wait()
@@ -210,11 +210,13 @@ func Benchmark(cfg Config) {
 				if k > cfg.Test.Pubs {
 					log.Printf("Something went wrong with messages")
 				}
+				log.Printf("Receieved result\n")
 				results[k] = result
 				k++
 			}
-		case <-done:
+		case <-doneSub:
 			{
+				log.Printf("Subscriber done")
 				// every time subscriber receives MsgCount messages it will signal done
 				if j >= cfg.Test.Subs {
 					break
@@ -225,7 +227,7 @@ func Benchmark(cfg Config) {
 	}
 
 	totalTime := time.Now().Sub(start)
-	totals := calculateTotalResults(results, totalTime, &subTimes)
+	totals := calculateTotalResults(results, totalTime, &subsResults)
 	if totals == nil {
 		return
 	}
@@ -239,22 +241,16 @@ func prepareSenML(sz int, payload string) senml.SenML {
 	t := (float64)(time.Now().Nanosecond())
 	timeStamp := senml.SenMLRecord{
 		BaseName: "pub-2019-08-31T12:38:25.139715762+02:00-57",
-		Name:     "timeSent",
 		Value:    &t,
 	}
 
 	tsByte, err := json.Marshal(timeStamp)
-	if err != nil {
+	if err != nil || len(payload) == 0 {
 		log.Fatalf("Failed to create test message")
 	}
 
-	pload := []byte(payload)
-	if len(payload) == 0 && sz > len(tsByte) {
-		pload = make([]byte, sz-len(tsByte))
-	}
-
 	sml := senml.SenMLRecord{}
-	err = json.Unmarshal(pload, &sml)
+	err = json.Unmarshal([]byte(payload), &sml)
 	if err != nil {
 		log.Println("cannot unmarshal payload")
 	}
@@ -279,10 +275,6 @@ func prepareSenML(sz int, payload string) senml.SenML {
 		records[i] = sml
 	}
 
-	for i := 1; i < n; i++ {
-		log.Printf("%f\n", records[i].Time)
-	}
-
 	s := senml.SenML{
 		Records: records,
 	}
@@ -298,5 +290,6 @@ func getPayload(cid string, time float64, f func() senml.SenML) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("pld%s\n", string(payload))
 	return payload, nil
 }

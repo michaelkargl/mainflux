@@ -3,15 +3,11 @@
   url = "tcp://142.93.118.47:1883"
 
   [mqtt.message]
-  size = 100
+  size = 200
   format = "text"
   qos = 2
-<<<<<<< HEAD
   retain = false
-=======
-  retain = true
-  payload = ""
->>>>>>> add pub-to-sub delivery time measure
+  payload = "{\"n\":\"lon\",\"t\":-4,\"v\":1.3}"
 
   [mqtt.tls]
   mtls = false
@@ -19,21 +15,13 @@
   ca = "ca.crt"
 
 [test]
-<<<<<<< HEAD
 pubs = 100
 subs = 30
-=======
-pubs = 1
-subs = 1
->>>>>>> add pub-to-sub delivery time measure
 count = 100
+count =5 
 
 [log]
 quiet = false
 
 [mainflux]
-<<<<<<< HEAD
 connections_file = "../provision/mfconn.toml"
-=======
-connections_file = "connections.toml"
->>>>>>> add pub-to-sub delivery time measure
