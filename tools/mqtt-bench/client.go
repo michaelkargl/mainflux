@@ -131,6 +131,22 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	doneRec := make(chan bool)
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
+	go func() {
+		fmt.Printf("go func\n")
+		for {
+			select {
+			case <-doneRec:
+				fmt.Printf("finished publishing, close sub %s\n", c.ID)
+				*doneSub <- true
+				return
+			case <-*finishPub:
+				fmt.Printf("finished publishing, close sub %s\n", c.ID)
+				time.Sleep(2 * time.Second)
+				*doneSub <- true
+				return
+			}
+		}
+	}()
 
 	onConnected := func(client mqtt.Client) {
 		wg.Done()
@@ -149,6 +165,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		doneRec <- true
 	}
 
+	doneRec <- true
 	i := 0
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
@@ -178,18 +195,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	})
 
 	token.Wait()
-	for {
-		select {
-		case <-doneRec:
-			*doneSub <- true
-			return
-		case <-*finishPub:
-			fmt.Printf("finished publishing, close sub %s\n", c.ID)
-			time.Sleep(2 * time.Second)
-			*doneSub <- true
-			return
-		}
-	}
+
 }
 
 func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan bool) {
