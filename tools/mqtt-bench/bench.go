@@ -158,7 +158,6 @@ func Benchmark(cfg Config) {
 	}
 
 	wg.Wait()
-	finishPub <- true
 
 	// Publishers
 	start := time.Now()
@@ -203,34 +202,44 @@ func Benchmark(cfg Config) {
 	}
 
 	k := 0
-	j := 0
-	for i := 0; i < cfg.Test.Pubs+cfg.Test.Subs; i++ {
 
-		select {
-		case result := <-resCh:
-			{
-				fmt.Printf("done, results prepared\n")
-				if k > cfg.Test.Pubs {
-					log.Printf("Something went wrong with messages")
+	go func() {
+		for i := 0; i < cfg.Test.Pubs; i++ {
+			select {
+			case result := <-resCh:
+				{
+					fmt.Printf("done, results prepared\n")
+
+					results[k] = result
+					k++
+					if k == cfg.Test.Pubs {
+						fmt.Printf("Publishers finished %d\n", i)
+						finishPub <- true
+					}
 				}
-				results[k] = result
-				k++
-				if k == cfg.Test.Pubs {
-					fmt.Printf("Publishers finished")
-					finishPub <- true
-				}
-			}
-		case <-doneSub:
-			{
-				// every time subscriber receives MsgCount messages it will signal done
-				if j >= cfg.Test.Subs {
-					break
-				}
-				fmt.Printf("done with subscribers\n")
-				j++
 			}
 		}
-	}
+	}()
+
+	finishSub := make(chan bool)
+	go func() {
+		for i := 0; i < cfg.Test.Subs; i++ {
+			select {
+			case <-doneSub:
+				{
+					fmt.Printf("done with subscribers %d\n", i)
+					// every time subscriber receives MsgCount messages it will signal done
+					if i == cfg.Test.Subs-1 {
+						finishSub <- true
+						break
+					}
+
+				}
+			}
+		}
+	}()
+	<-finishPub
+	<-finishSub
 
 	totalTime := time.Now().Sub(start)
 	totals := calculateTotalResults(results, totalTime, subsResults)

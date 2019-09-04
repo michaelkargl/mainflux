@@ -136,7 +136,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		for {
 			select {
 			case <-doneRec:
-				fmt.Printf("finished publishing, close sub %s\n", c.ID)
+				fmt.Printf("finished receiveing, close sub %s\n", c.ID)
 				*doneSub <- true
 				return
 			case <-*finishPub:
@@ -165,7 +165,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		doneRec <- true
 	}
 
-	doneRec <- true
 	i := 0
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
