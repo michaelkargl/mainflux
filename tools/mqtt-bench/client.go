@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"strings"
 	"sync"
@@ -66,28 +67,29 @@ func (c *Client) runPublisher(r chan *runResults) {
 	doneGen := make(chan bool)
 	donePub := make(chan bool)
 	runResults := new(runResults)
-
-	started := time.Now()
+	Inf := float64(math.Inf(+1))
+	var diff float64
 
 	// Start generator
 	go c.generate(newMsgs, doneGen)
 
+	started := time.Now()
 	// Start publisher
 	go c.publish(newMsgs, pubMsgs, doneGen, donePub)
-
 	times := []float64{}
-
 	for {
 		select {
 		case m := <-pubMsgs:
 			cid := m.ID
 			if m.Error {
 				runResults.Failures++
+				diff = Inf
 			} else {
 				runResults.Successes++
-				runResults.ID = cid
-				times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microseconds
+				diff = float64(m.Delivered.Sub(m.Sent).Nanoseconds() / 1000) // in microseconds
 			}
+			runResults.ID = cid
+			times = append(times, diff)
 		case <-donePub:
 			// Calculate results
 			duration := time.Now().Sub(started)
@@ -107,11 +109,8 @@ func (c *Client) runPublisher(r chan *runResults) {
 }
 
 // Subscriber
-func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, done, doneSub *chan bool) {
-	defer wg.Done()
-
-	// Start subscriber
-	c.subscribe(wg, subsResults, done, doneSub)
+func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub, doneSub *chan bool) {
+	c.subscribe(wg, subsResults, tot, finishPub, doneSub)
 }
 
 func (c *Client) generate(ch chan *message, done chan bool) {
@@ -128,61 +127,69 @@ func (c *Client) generate(ch chan *message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, done, doneSub *chan bool) {
+func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub, doneSub *chan bool) {
+	doneRec := make(chan bool)
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 
 	onConnected := func(client mqtt.Client) {
+		wg.Done()
+		fmt.Printf("subscribed to %s\n\n", c.MsgTopic)
 		if !c.Quiet {
 			log.Printf("Client %v is connected to the broker %v\n", clientID, c.BrokerURL)
 		}
 	}
-
 	connLost := func(client mqtt.Client, reason error) {
 		log.Printf("Client %v had lost connection to the broker: %s\n", c.ID, reason.Error())
-		*doneSub <- true
+		doneRec <- true
 	}
-	c.connect(onConnected, connLost)
-	i := 0
+	if c.connect(onConnected, connLost) != nil {
+		wg.Done()
+		log.Printf("Client %v failed connecting to the broker\n", c.ID)
+		doneRec <- true
+	}
 
+	i := 0
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
-		i++
-		//mp := messagePayload{}
-		//mp := senml.SenML{}
-		arrival := time.Now().UnixNano()
-		log.Printf("pld: %s\n", string(msg.Payload()))
+		arrival := float64(time.Now().UnixNano())
 		mp, err := senml.Decode(msg.Payload(), senml.JSON)
 		if err != nil {
-			log.Printf("Failed to decode message %s\n", err.Error())
+			//log.Printf("Failed to decode message %s\n", err.Error())
 		}
-
-		//times = append(times, float64(m.Delivered.Sub(m.Sent).Nanoseconds()/1000)) // in microsecondsme
 		id := mp.Records[0].BaseName
 		timeSent := *mp.Records[0].Value
 		arrivalTimes, ok := (*subsResults)[id]
 		if !ok {
-			clientArrivalTimes := make([]float64, 50)
-			arrivalTimes = &clientArrivalTimes
+			t := []float64{}
+			arrivalTimes = &t
 			(*subsResults)[id] = arrivalTimes
-
 		}
-		// remove - fmt.Printf("%d dif %f:\n", i, float64(arrival.Sub(mp.Sent).Nanoseconds()/1000))
-
-		*arrivalTimes = append(*arrivalTimes, float64(arrival)-timeSent)
-
-		if i == c.MsgCount-1 {
+		a := *arrivalTimes
+		a = append(a, arrival-timeSent)
+		(*subsResults)[id] = &a
+		log.Printf("msg-%d - %s del:%f, snt:%f, dif:%f\n\n", i, string(msg.Payload()), arrival, timeSent, arrival-timeSent)
+		i++
+		if i == tot {
 			log.Printf("Subscriber %s has finished receiving", c.ID)
-			*doneSub <- true
+			doneRec <- true
 		}
-		log.Printf("recieved msg %d in %f \n", i, float64(arrival)-timeSent)
 
-		if err != nil {
-			log.Printf("Client %s failed to decode message\n", clientID)
-		}
 	})
 
 	token.Wait()
+	for {
+		select {
+		case <-doneRec:
+			*doneSub <- true
+			return
+		case <-*finishPub:
+			fmt.Printf("finished publishing, close sub %s\n", c.ID)
+			time.Sleep(2 * time.Second)
+			*doneSub <- true
+			return
+		}
+	}
 }
 
 func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan bool) {
@@ -202,6 +209,7 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 				if err != nil {
 					log.Printf("Failed to marshal payload - %s", err.Error())
 				}
+				fmt.Printf("pub:%s - %s- %s\n\n", c.ID, c.MsgTopic, string(pload))
 				token := client.Publish(m.Topic, m.QoS, c.Retain, pload)
 				token.Wait()
 				if token.Error() != nil {
@@ -232,6 +240,7 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 		if ctr < c.MsgCount {
 			flushMessages := make([]message, c.MsgCount-ctr)
 			for _, m := range flushMessages {
+				m.Error = true
 				out <- &m
 			}
 		}
@@ -239,7 +248,12 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 	}
 
 	if c.connect(onConnected, connLost) != nil {
-		out <- &message{}
+		log.Printf("Failed to connect %s\n", c.ID)
+		flushMessages := make([]message, c.MsgCount-ctr)
+		for _, m := range flushMessages {
+			m.Error = true
+			out <- &m
+		}
 		donePub <- true
 	}
 

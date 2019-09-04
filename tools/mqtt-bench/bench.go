@@ -111,13 +111,14 @@ func Benchmark(cfg Config) {
 	}
 
 	resCh := make(chan *runResults)
-	done := make(chan bool)
+	finishPub := make(chan bool)
 	doneSub := make(chan bool)
+	startStamp := time.Now()
 
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
-	msg := prepareSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
+	msg := buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
 	getSenML := func() senml.SenML {
 		return msg
 	}
@@ -138,7 +139,7 @@ func Benchmark(cfg Config) {
 			BrokerURL:  cfg.MQTT.Broker.URL,
 			BrokerUser: mfThing.ThingID,
 			BrokerPass: mfThing.ThingKey,
-			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfConn.ChannelID),
+			MsgTopic:   getTopic(mfConn.ChannelID, startStamp),
 			MsgSize:    cfg.MQTT.Message.Size,
 			MsgCount:   cfg.Test.Count,
 			MsgQoS:     byte(cfg.MQTT.Message.QoS),
@@ -153,10 +154,11 @@ func Benchmark(cfg Config) {
 
 		wg.Add(1)
 
-		go c.runSubscriber(&wg, &subsResults, &done, &doneSub)
+		go c.runSubscriber(&wg, &subsResults, cfg.Test.Count*cfg.Test.Pubs, &finishPub, &doneSub)
 	}
 
 	wg.Wait()
+	finishPub <- true
 
 	// Publishers
 	start := time.Now()
@@ -177,7 +179,7 @@ func Benchmark(cfg Config) {
 			BrokerURL:  cfg.MQTT.Broker.URL,
 			BrokerUser: mfThing.ThingID,
 			BrokerPass: mfThing.ThingKey,
-			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfConn.ChannelID),
+			MsgTopic:   getTopic(mfConn.ChannelID, startStamp),
 			MsgSize:    cfg.MQTT.Message.Size,
 			MsgCount:   cfg.Test.Count,
 			MsgQoS:     byte(cfg.MQTT.Message.QoS),
@@ -187,7 +189,7 @@ func Benchmark(cfg Config) {
 			CA:         caByte,
 			ClientCert: cert,
 			Retain:     cfg.MQTT.Message.Retain,
-			Message:    getPayload,
+			Message:    getSenMLPayload,
 			GetSenML:   getSenML,
 		}
 
@@ -202,32 +204,36 @@ func Benchmark(cfg Config) {
 
 	k := 0
 	j := 0
-	for i := 0; i < cfg.Test.Pubs*cfg.Test.Count; i++ {
+	for i := 0; i < cfg.Test.Pubs+cfg.Test.Subs; i++ {
 
 		select {
 		case result := <-resCh:
 			{
+				fmt.Printf("done, results prepared\n")
 				if k > cfg.Test.Pubs {
 					log.Printf("Something went wrong with messages")
 				}
-				log.Printf("Receieved result\n")
 				results[k] = result
 				k++
+				if k == cfg.Test.Pubs {
+					fmt.Printf("Publishers finished")
+					finishPub <- true
+				}
 			}
 		case <-doneSub:
 			{
-				log.Printf("Subscriber done")
 				// every time subscriber receives MsgCount messages it will signal done
 				if j >= cfg.Test.Subs {
 					break
 				}
+				fmt.Printf("done with subscribers\n")
 				j++
 			}
 		}
 	}
 
 	totalTime := time.Now().Sub(start)
-	totals := calculateTotalResults(results, totalTime, &subsResults)
+	totals := calculateTotalResults(results, totalTime, subsResults)
 	if totals == nil {
 		return
 	}
@@ -236,9 +242,9 @@ func Benchmark(cfg Config) {
 	printResults(results, totals, cfg.MQTT.Message.Format, cfg.Log.Quiet)
 }
 
-func prepareSenML(sz int, payload string) senml.SenML {
+func buildSenML(sz int, payload string) senml.SenML {
 
-	t := (float64)(time.Now().Nanosecond())
+	t := (float64)(time.Now().UnixNano())
 	timeStamp := senml.SenMLRecord{
 		BaseName: "pub-2019-08-31T12:38:25.139715762+02:00-57",
 		Value:    &t,
@@ -252,7 +258,7 @@ func prepareSenML(sz int, payload string) senml.SenML {
 	sml := senml.SenMLRecord{}
 	err = json.Unmarshal([]byte(payload), &sml)
 	if err != nil {
-		log.Println("cannot unmarshal payload")
+		log.Fatalf("Cannot unmarshal payload")
 	}
 
 	msgByte, err := json.Marshal(sml)
@@ -260,7 +266,7 @@ func prepareSenML(sz int, payload string) senml.SenML {
 		log.Fatalf("Failed to create test message")
 	}
 
-	// how many records to make messae long sz bytes
+	// how many records to make message long sz bytes
 	n := (sz-len(tsByte))/len(msgByte) + 1
 	if sz < len(tsByte) {
 		n = 1
@@ -271,7 +277,7 @@ func prepareSenML(sz int, payload string) senml.SenML {
 	for i := 1; i < n; i++ {
 		// is this needed
 		// i think we need id to be saved with db writer to t
-		sml.Time = float64(time.Now().Nanosecond())
+		sml.Time = float64(time.Now().UnixNano())
 		records[i] = sml
 	}
 
@@ -282,14 +288,17 @@ func prepareSenML(sz int, payload string) senml.SenML {
 	return s
 }
 
-func getPayload(cid string, time float64, f func() senml.SenML) ([]byte, error) {
-	s := f()
+func getSenMLPayload(cid string, time float64, getSenML func() senml.SenML) ([]byte, error) {
+	s := getSenML()
 	s.Records[0].Value = &time
 	s.Records[0].BaseName = cid
 	payload, err := senml.Encode(s, senml.JSON, senml.OutputOptions{})
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("pld%s\n", string(payload))
 	return payload, nil
+}
+
+func getTopic(ch string, start time.Time) string {
+	return fmt.Sprintf("channels/%s/messages/%d/test", ch, start.UnixNano())
 }
