@@ -118,7 +118,7 @@ func Benchmark(cfg Config) {
 
 	resCh := make(chan *runResults)
 	finishPub := make(chan bool)
-	doneSub := make(chan bool)
+	doneSub := make(chan string)
 	startStamp := time.Now()
 
 	n := len(mf.Channels)
@@ -215,37 +215,24 @@ func Benchmark(cfg Config) {
 		results = make([]*runResults, cfg.Test.Pubs)
 	}
 
-	go func() {
-		for i := 0; i < cfg.Test.Pubs; i++ {
-			select {
-			case result := <-resCh:
-				{
-					results[i] = result
-					if i == cfg.Test.Pubs-1 {
-						finishPub <- true
-					}
-				}
+	for i := 0; i < cfg.Test.Pubs; i++ {
+		select {
+		case result := <-resCh:
+			{
+				results[i] = result
 			}
 		}
-	}()
+	}
+	finishPub <- true
 
-	finishSub := make(chan bool)
-	go func() {
-		for i := 0; i < cfg.Test.Subs; i++ {
-			select {
-			case <-doneSub:
-				{
-					// every time subscriber receives MsgCount messages it will signal done
-					if i == cfg.Test.Subs-1 {
-						finishSub <- true
-						break
-					}
-
-				}
+	for i := 0; i < cfg.Test.Subs; i++ {
+		select {
+		case msg := <-doneSub:
+			{
+				fmt.Println(msg)
 			}
 		}
-	}()
-	<-finishSub
+	}
 
 	totalTime := time.Now().Sub(start)
 	totals := calculateTotalResults(results, totalTime, subsResults)

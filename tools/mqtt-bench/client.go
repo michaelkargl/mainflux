@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -92,6 +93,7 @@ func (c *Client) runPublisher(r chan *runResults) {
 			times = append(times, diff)
 		case <-donePub:
 			// Calculate results
+			log.Printf("done for %s\n ratio %d  %d\n", runResults.ID, runResults.Successes, runResults.Successes+runResults.Failures)
 			duration := time.Now().Sub(started)
 			timeMatrix := mat.NewDense(1, len(times), times)
 			runResults.MsgTimeMin = mat.Min(timeMatrix)
@@ -109,7 +111,7 @@ func (c *Client) runPublisher(r chan *runResults) {
 }
 
 // Subscriber
-func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub, doneSub *chan bool) {
+func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub *chan bool, doneSub *chan string) {
 	c.subscribe(wg, subsResults, tot, finishPub, doneSub)
 }
 
@@ -127,7 +129,7 @@ func (c *Client) generate(ch chan *message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub, doneSub *chan bool) {
+func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub *chan bool, doneSub *chan string) {
 	doneRec := make(chan bool)
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
@@ -137,12 +139,11 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 			select {
 			case <-doneRec:
 				log.Printf("Subscriber %s has finished receiving %d", c.ID, i)
-				*doneSub <- true
+				*doneSub <- fmt.Sprintf("Subscriber %s has finished receiving %d", c.ID, i)
 				return
 			case <-*finishPub:
-				log.Printf("Subscriber %s has finished receiving %d", c.ID, i)
-				time.Sleep(4 * time.Second)
-				*doneSub <- true
+				time.Sleep(2 * time.Second)
+				*doneSub <- fmt.Sprintf("Subscriber %s has finished receiving %d", c.ID, i)
 				return
 			}
 		}
@@ -166,33 +167,33 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
-		// arrival := float64(time.Now().UnixNano())
-		// var id string
-		// var timeSent float64
+		arrival := float64(time.Now().UnixNano())
+		var id string
+		var timeSent float64
 
-		// if c.GetSenML() != nil {
-		// 	mp, err := senml.Decode(msg.Payload(), senml.JSON)
-		// 	if err != nil && !c.Quiet {
-		// 		log.Printf("Failed to decode message %s\n", err.Error())
-		// 	}
-		// 	id = mp.Records[0].BaseName
-		// 	timeSent = *mp.Records[0].Value
-		// } else {
-		// 	tst := testMsg{}
-		// 	json.Unmarshal(msg.Payload(), &tst)
-		// 	id = tst.ClientID
-		// 	timeSent = tst.Sent
-		// }
+		if c.GetSenML() != nil {
+			mp, err := senml.Decode(msg.Payload(), senml.JSON)
+			if err != nil && !c.Quiet {
+				log.Printf("Failed to decode message %s\n", err.Error())
+			}
+			id = mp.Records[0].BaseName
+			timeSent = *mp.Records[0].Value
+		} else {
+			tst := testMsg{}
+			json.Unmarshal(msg.Payload(), &tst)
+			id = tst.ClientID
+			timeSent = tst.Sent
+		}
 
-		// arrivalTimes, ok := (*subsResults)[id]
-		// if !ok {
-		// 	t := []float64{}
-		// 	arrivalTimes = &t
-		// 	(*subsResults)[id] = arrivalTimes
-		// }
-		// a := *arrivalTimes
-		// a = append(a, (arrival - timeSent))
-		// (*subsResults)[id] = &a
+		arrivalTimes, ok := (*subsResults)[id]
+		if !ok {
+			t := []float64{}
+			arrivalTimes = &t
+			(*subsResults)[id] = arrivalTimes
+		}
+		a := *arrivalTimes
+		a = append(a, (arrival - timeSent))
+		(*subsResults)[id] = &a
 		i++
 		if i == tot {
 			doneRec <- true
