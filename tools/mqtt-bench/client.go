@@ -136,11 +136,9 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		for {
 			select {
 			case <-doneRec:
-				fmt.Printf("finished receiveing, close sub %s\n", c.ID)
 				*doneSub <- true
 				return
 			case <-*finishPub:
-				fmt.Printf("finished publishing, close sub %s\n", c.ID)
 				time.Sleep(2 * time.Second)
 				*doneSub <- true
 				return
@@ -150,7 +148,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 
 	onConnected := func(client mqtt.Client) {
 		wg.Done()
-		fmt.Printf("subscribed to %s\n\n", c.MsgTopic)
 		if !c.Quiet {
 			log.Printf("Client %v is connected to the broker %v\n", clientID, c.BrokerURL)
 		}
@@ -225,7 +222,6 @@ func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan 
 				if err != nil {
 					log.Printf("Failed to marshal payload - %s", err.Error())
 				}
-				fmt.Printf("pub:%s - %s- %s\n\n", c.ID, c.MsgTopic, string(pload))
 				token := client.Publish(m.Topic, m.QoS, c.Retain, pload)
 				token.Wait()
 				if token.Error() != nil {

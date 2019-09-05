@@ -98,7 +98,7 @@ func Benchmark(cfg Config) {
 	var wg sync.WaitGroup
 	var err error
 
-	//checkConnection(cfg.MQTT.Broker.URL, 1)
+	checkConnection(cfg.MQTT.Broker.URL, 1)
 	subsResults := make(subsResults)
 	var caByte []byte
 	if cfg.MQTT.TLS.MTLS {
@@ -128,7 +128,6 @@ func Benchmark(cfg Config) {
 	getPload := getBytePayload
 
 	if len(cfg.MQTT.Message.Payload) > 0 {
-		fmt.Printf("size")
 		msg = buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
 		getPload = getSenMLPayload
 	}
@@ -220,11 +219,8 @@ func Benchmark(cfg Config) {
 			select {
 			case result := <-resCh:
 				{
-					fmt.Printf("done, results prepared\n")
-
 					results[i] = result
 					if i == cfg.Test.Pubs-1 {
-						fmt.Printf("Publishers finished %d\n", i)
 						finishPub <- true
 					}
 				}
@@ -238,10 +234,8 @@ func Benchmark(cfg Config) {
 			select {
 			case <-doneSub:
 				{
-					fmt.Printf("done with subscribers %d\n", i)
 					// every time subscriber receives MsgCount messages it will signal done
 					if i == cfg.Test.Subs-1 {
-						fmt.Printf("done with subscribers %d\n", i)
 						finishSub <- true
 						break
 					}

@@ -65,21 +65,9 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 	totals.TotalRunTime = totalTime.Seconds()
 
 	totals.MsgTimeMin = results[0].MsgTimeMin
-	log.Printf("length:%d\n", len(sr))
-	for k, v := range sr {
-		fmt.Printf("%s\n", k)
-		fmt.Printf("%v\n", v)
-		for t, k := range *(sr[k]) {
-			fmt.Printf("%d\n", t)
-			fmt.Printf("%f\n", k)
-		}
-	}
 	for i, res := range results {
 
 		if len(sr) > 0 {
-			log.Printf("get results %s\n", res.ID)
-			log.Printf("length:%d %s\n", len(*sr[res.ID]), res.ID)
-
 			times := mat.NewDense(1, len(*sr[res.ID]), *sr[res.ID])
 
 			subTimeRunResults.MsgTimeMin = mat.Min(times) / 1000
