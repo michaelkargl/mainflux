@@ -6,7 +6,8 @@
   size = 100
   format = "text"
   qos = 2
-  retain = true
+  retain = false
+  payload = ""
 
   [mqtt.tls]
   mtls = false
@@ -14,12 +15,12 @@
   ca = "ca.crt"
 
 [test]
-pubs = 3
-subs = 1
+pubs = 100
+subs = 30
 count = 100
 
 [log]
 quiet = false
 
 [mainflux]
-connections_file = "../provision/connections.toml"
+connections_file = "../provision/mfconn.toml"
