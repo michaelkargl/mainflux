@@ -117,8 +117,6 @@ func Benchmark(cfg Config) {
 	}
 
 	resCh := make(chan *runResults)
-	finishPub := make(chan bool)
-	doneSub := make(chan string)
 	startStamp := time.Now()
 
 	n := len(mf.Channels)
@@ -168,7 +166,7 @@ func Benchmark(cfg Config) {
 
 		wg.Add(1)
 
-		go c.runSubscriber(&wg, &subsResults, cfg.Test.Count*cfg.Test.Pubs, &finishPub, &doneSub)
+		go c.runSubscriber(&wg, &subsResults, cfg.Test.Count*cfg.Test.Pubs)
 	}
 
 	wg.Wait()
@@ -223,18 +221,8 @@ func Benchmark(cfg Config) {
 			}
 		}
 	}
-	finishPub <- true
-
-	for i := 0; i < cfg.Test.Subs; i++ {
-		select {
-		case msg := <-doneSub:
-			{
-				fmt.Println(msg)
-			}
-		}
-	}
-
 	totalTime := time.Now().Sub(start)
+	time.Sleep(2 * time.Second)
 	totals := calculateTotalResults(results, totalTime, subsResults)
 	if totals == nil {
 		return

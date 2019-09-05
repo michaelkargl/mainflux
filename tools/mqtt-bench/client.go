@@ -111,8 +111,8 @@ func (c *Client) runPublisher(r chan *runResults) {
 }
 
 // Subscriber
-func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub *chan bool, doneSub *chan string) {
-	c.subscribe(wg, subsResults, tot, finishPub, doneSub)
+func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, tot int) {
+	c.subscribe(wg, subsResults, tot)
 }
 
 func (c *Client) generate(ch chan *message, done chan bool) {
@@ -129,25 +129,10 @@ func (c *Client) generate(ch chan *message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int, finishPub *chan bool, doneSub *chan string) {
-	doneRec := make(chan bool)
+func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int) {
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 	i := 0
-	go func() {
-		for {
-			select {
-			case <-doneRec:
-				log.Printf("Subscriber %s has finished receiving %d", c.ID, i)
-				*doneSub <- fmt.Sprintf("Subscriber %s has finished receiving %d", c.ID, i)
-				return
-			case <-*finishPub:
-				time.Sleep(2 * time.Second)
-				*doneSub <- fmt.Sprintf("Subscriber %s has finished receiving %d", c.ID, i)
-				return
-			}
-		}
-	}()
 
 	onConnected := func(client mqtt.Client) {
 		wg.Done()
@@ -157,12 +142,10 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	}
 	connLost := func(client mqtt.Client, reason error) {
 		log.Printf("Client %v had lost connection to the broker: %s\n", c.ID, reason.Error())
-		doneRec <- true
 	}
 	if c.connect(onConnected, connLost) != nil {
 		wg.Done()
 		log.Printf("Client %v failed connecting to the broker\n", c.ID)
-		doneRec <- true
 	}
 
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
@@ -195,9 +178,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		a = append(a, (arrival - timeSent))
 		(*subsResults)[id] = &a
 		i++
-		if i == tot {
-			doneRec <- true
-		}
 
 	})
 
