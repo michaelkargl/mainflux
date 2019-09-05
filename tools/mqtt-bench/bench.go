@@ -201,8 +201,6 @@ func Benchmark(cfg Config) {
 		results = make([]*runResults, cfg.Test.Pubs)
 	}
 
-	k := 0
-
 	go func() {
 		for i := 0; i < cfg.Test.Pubs; i++ {
 			select {
@@ -210,9 +208,8 @@ func Benchmark(cfg Config) {
 				{
 					fmt.Printf("done, results prepared\n")
 
-					results[k] = result
-					k++
-					if k == cfg.Test.Pubs {
+					results[i] = result
+					if i == cfg.Test.Pubs-1 {
 						fmt.Printf("Publishers finished %d\n", i)
 						finishPub <- true
 					}
@@ -230,6 +227,7 @@ func Benchmark(cfg Config) {
 					fmt.Printf("done with subscribers %d\n", i)
 					// every time subscriber receives MsgCount messages it will signal done
 					if i == cfg.Test.Subs-1 {
+						fmt.Printf("done with subscribers %d\n", i)
 						finishSub <- true
 						break
 					}
