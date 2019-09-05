@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -28,8 +29,8 @@ type Client struct {
 	BrokerUser string
 	BrokerPass string
 	MsgTopic   string
-	Message    func(cid string, time float64, f func() senml.SenML) ([]byte, error)
-	GetSenML   func() senml.SenML
+	Message    func(cid string, time float64, f func() *senml.SenML) ([]byte, error)
+	GetSenML   func() *senml.SenML
 	MsgSize    int
 	MsgCount   int
 	MsgQoS     byte
@@ -168,12 +169,23 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
 		arrival := float64(time.Now().UnixNano())
-		mp, err := senml.Decode(msg.Payload(), senml.JSON)
-		if err != nil {
-			//log.Printf("Failed to decode message %s\n", err.Error())
+		var id string
+		var timeSent float64
+
+		if c.GetSenML() == nil {
+			mp, err := senml.Decode(msg.Payload(), senml.JSON)
+			if err != nil && !c.Quiet {
+				log.Printf("Failed to decode message %s\n", err.Error())
+			}
+			id = mp.Records[0].BaseName
+			timeSent = *mp.Records[0].Value
+		} else {
+			tst := testMsg{}
+			json.Unmarshal(msg.Payload(), &tst)
+			id = tst.ClientID
+			timeSent = tst.Sent
 		}
-		id := mp.Records[0].BaseName
-		timeSent := *mp.Records[0].Value
+
 		arrivalTimes, ok := (*subsResults)[id]
 		if !ok {
 			t := []float64{}

@@ -128,12 +128,12 @@ func Benchmark(cfg Config) {
 	getPload := getBytePayload
 
 	if len(cfg.MQTT.Message.Payload) > 0 {
+		fmt.Printf("size")
 		msg = buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
 		getPload = getSenMLPayload
-
 	}
-	getSenML := func() senml.SenML {
-		return msg
+	getSenML := func() *senml.SenML {
+		return &msg
 	}
 
 	// Subscribers
@@ -163,7 +163,7 @@ func Benchmark(cfg Config) {
 			CA:         caByte,
 			ClientCert: cert,
 			Retain:     cfg.MQTT.Message.Retain,
-			Message:    nil,
+			GetSenML:   getSenML,
 		}
 
 		wg.Add(1)
@@ -312,7 +312,7 @@ func buildSenML(sz int, payload string) senml.SenML {
 	return s
 }
 
-func getBytePayload(cid string, time float64, getSenML func() senml.SenML) ([]byte, error) {
+func getBytePayload(cid string, time float64, getSenML func() *senml.SenML) ([]byte, error) {
 
 	msg := testMsg{}
 	msg.ClientID = cid
@@ -323,7 +323,7 @@ func getBytePayload(cid string, time float64, getSenML func() senml.SenML) ([]by
 		log.Fatalf("Failed to create test message")
 	}
 
-	// Need to sort this out
+	// TODO - Need to sort this out
 	m := 500 - len(tsByte)
 	if m < 0 {
 		return tsByte, nil
@@ -338,8 +338,8 @@ func getBytePayload(cid string, time float64, getSenML func() senml.SenML) ([]by
 	return b, nil
 }
 
-func getSenMLPayload(cid string, time float64, getSenML func() senml.SenML) ([]byte, error) {
-	s := getSenML()
+func getSenMLPayload(cid string, time float64, getSenML func() *senml.SenML) ([]byte, error) {
+	s := *getSenML()
 	s.Records[0].Value = &time
 	s.Records[0].BaseName = cid
 	payload, err := senml.Encode(s, senml.JSON, senml.OutputOptions{})
