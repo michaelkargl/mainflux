@@ -222,7 +222,6 @@ func Benchmark(cfg Config) {
 		}
 	}
 	totalTime := time.Now().Sub(start)
-	time.Sleep(2 * time.Second)
 	totals := calculateTotalResults(results, totalTime, subsResults)
 	if totals == nil {
 		return

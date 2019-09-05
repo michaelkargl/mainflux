@@ -55,7 +55,6 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 		return nil
 	}
 	totals := new(totalResults)
-	subTimeRunResults := runResults{}
 	msgTimeMeans := make([]float64, len(results))
 	msgTimeMeansDelivered := make([]float64, len(results))
 	msgsPerSecs := make([]float64, len(results))
@@ -68,18 +67,17 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 	for i, res := range results {
 
 		if len(sr) > 0 {
-			times := mat.NewDense(1, len(*sr[res.ID]), *sr[res.ID])
-
-			subTimeRunResults.MsgTimeMin = mat.Min(times) / 1000
-			subTimeRunResults.MsgTimeMax = mat.Max(times) / 1000
-			subTimeRunResults.MsgTimeMean = stat.Mean(*(sr[res.ID]), nil) / 1000
-			subTimeRunResults.MsgTimeStd = stat.StdDev(*(sr[res.ID]), nil) / 1000
-
+			a, ok := sr[res.ID]
+			if ok {
+				times := mat.NewDense(1, len(*a), *a)
+				res.MsgDelTimeMin = mat.Min(times) / 1000
+				res.MsgDelTimeMax = mat.Max(times) / 1000
+				res.MsgDelTimeMean = stat.Mean(*(sr[res.ID]), nil) / 1000
+				res.MsgDelTimeStd = stat.StdDev(*(sr[res.ID]), nil) / 1000
+			} else {
+				log.Println("No data for del ", res.ID)
+			}
 		}
-		res.MsgDelTimeMin = subTimeRunResults.MsgTimeMin
-		res.MsgDelTimeMax = subTimeRunResults.MsgTimeMax
-		res.MsgDelTimeMean = subTimeRunResults.MsgTimeMean
-		res.MsgDelTimeStd = subTimeRunResults.MsgTimeStd
 
 		totals.Successes += res.Successes
 		totals.Failures += res.Failures
@@ -93,15 +91,15 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 			totals.MsgTimeMax = res.MsgTimeMax
 		}
 
-		if subTimeRunResults.MsgTimeMin < totals.MsgDelTimeMin {
-			totals.MsgDelTimeMin = subTimeRunResults.MsgTimeMin
+		if res.MsgDelTimeMin < totals.MsgDelTimeMin {
+			totals.MsgDelTimeMin = res.MsgDelTimeMin
 		}
 
-		if subTimeRunResults.MsgTimeMax > totals.MsgDelTimeMax {
-			totals.MsgDelTimeMax = subTimeRunResults.MsgTimeMax
+		if res.MsgDelTimeMax > totals.MsgDelTimeMax {
+			totals.MsgDelTimeMax = res.MsgDelTimeMax
 		}
 
-		msgTimeMeansDelivered[i] = subTimeRunResults.MsgTimeMean
+		msgTimeMeansDelivered[i] = res.MsgDelTimeMean
 		msgTimeMeans[i] = res.MsgTimeMean
 		msgsPerSecs[i] = res.MsgsPerSec
 		runTimes[i] = res.RunTime
