@@ -179,8 +179,10 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		} else {
 			tst := testMsg{}
 			json.Unmarshal(msg.Payload(), &tst)
+
 			id = tst.ClientID
 			timeSent = tst.Sent
+			fmt.Printf("recieved %s %f\n", id, timeSent)
 		}
 
 		arrivalTimes, ok := (*subsResults)[id]
@@ -192,7 +194,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		a := *arrivalTimes
 		a = append(a, (arrival - timeSent))
 		(*subsResults)[id] = &a
-		log.Printf("msg-%d - %s del:%f, snt:%f, dif:%f\n\n", i, string(msg.Payload()), arrival, timeSent, arrival-timeSent)
 		i++
 		if i == tot {
 			log.Printf("Subscriber %s has finished receiving", c.ID)
@@ -325,10 +326,11 @@ func checkConnection(broker string, timeoutSecs int) {
 	host := strings.Trim(s[1], "/")
 	port := s[2]
 
+	log.Println("Testing connection...")
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", host, port), time.Duration(timeoutSecs)*time.Second)
 	conClose := func() {
 		if conn != nil {
-			log.Println("Closing connection...")
+			log.Println("Closing testing connection...")
 			conn.Close()
 		}
 	}
