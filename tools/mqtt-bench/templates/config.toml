@@ -15,9 +15,14 @@
   ca = "ca.crt"
 
 [test]
+<<<<<<< HEAD
 pubs = 100
 subs = 30
 count = 100
+=======
+pubs = 1 
+subs = 1
+>>>>>>> improve sync between pub and sub
 count =5 
 
 [log]
