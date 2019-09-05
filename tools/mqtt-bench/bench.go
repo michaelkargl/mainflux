@@ -124,17 +124,18 @@ func Benchmark(cfg Config) {
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
-	var msg senml.SenML
+	var msg *senml.SenML
 	getPload := getBytePayload
 
 	if len(cfg.MQTT.Message.Payload) > 0 {
-		msg = buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
+		m := buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
+		msg = &m
 		getPload = getSenMLPayload
 	}
-	getSenML := func() *senml.SenML {
-		return &msg
-	}
 
+	getSenML := func() *senml.SenML {
+		return msg
+	}
 	// Subscribers
 	for i := 0; i < cfg.Test.Subs; i++ {
 		mfChan := mf.Channels[i%n]

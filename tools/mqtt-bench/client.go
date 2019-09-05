@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -132,14 +131,17 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	doneRec := make(chan bool)
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
+	i := 0
 	go func() {
 		for {
 			select {
 			case <-doneRec:
+				log.Printf("Subscriber %s has finished receiving %d", c.ID, i)
 				*doneSub <- true
 				return
 			case <-*finishPub:
-				time.Sleep(2 * time.Second)
+				log.Printf("Subscriber %s has finished receiving %d", c.ID, i)
+				time.Sleep(4 * time.Second)
 				*doneSub <- true
 				return
 			}
@@ -162,41 +164,37 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 		doneRec <- true
 	}
 
-	i := 0
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
-		arrival := float64(time.Now().UnixNano())
-		var id string
-		var timeSent float64
+		// arrival := float64(time.Now().UnixNano())
+		// var id string
+		// var timeSent float64
 
-		if c.GetSenML() == nil {
-			mp, err := senml.Decode(msg.Payload(), senml.JSON)
-			if err != nil && !c.Quiet {
-				log.Printf("Failed to decode message %s\n", err.Error())
-			}
-			id = mp.Records[0].BaseName
-			timeSent = *mp.Records[0].Value
-		} else {
-			tst := testMsg{}
-			json.Unmarshal(msg.Payload(), &tst)
+		// if c.GetSenML() != nil {
+		// 	mp, err := senml.Decode(msg.Payload(), senml.JSON)
+		// 	if err != nil && !c.Quiet {
+		// 		log.Printf("Failed to decode message %s\n", err.Error())
+		// 	}
+		// 	id = mp.Records[0].BaseName
+		// 	timeSent = *mp.Records[0].Value
+		// } else {
+		// 	tst := testMsg{}
+		// 	json.Unmarshal(msg.Payload(), &tst)
+		// 	id = tst.ClientID
+		// 	timeSent = tst.Sent
+		// }
 
-			id = tst.ClientID
-			timeSent = tst.Sent
-			fmt.Printf("recieved %s %f\n", id, timeSent)
-		}
-
-		arrivalTimes, ok := (*subsResults)[id]
-		if !ok {
-			t := []float64{}
-			arrivalTimes = &t
-			(*subsResults)[id] = arrivalTimes
-		}
-		a := *arrivalTimes
-		a = append(a, (arrival - timeSent))
-		(*subsResults)[id] = &a
+		// arrivalTimes, ok := (*subsResults)[id]
+		// if !ok {
+		// 	t := []float64{}
+		// 	arrivalTimes = &t
+		// 	(*subsResults)[id] = arrivalTimes
+		// }
+		// a := *arrivalTimes
+		// a = append(a, (arrival - timeSent))
+		// (*subsResults)[id] = &a
 		i++
 		if i == tot {
-			log.Printf("Subscriber %s has finished receiving", c.ID)
 			doneRec <- true
 		}
 
@@ -209,7 +207,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan bool) {
 	clientID := fmt.Sprintf("pub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
-	ctr := 0
+	ctr := 1
 	onConnected := func(client mqtt.Client) {
 		if !c.Quiet {
 			log.Printf("Client %v is connected to the broker %v\n", clientID, c.BrokerURL)
