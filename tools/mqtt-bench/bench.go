@@ -117,7 +117,7 @@ func Benchmark(cfg Config) {
 
 	// Subscribers
 	for i := 0; i < cfg.Test.Subs; i++ {
-		mfConn := mf.Channels[i%n]
+		mfChann := mf.Channels[i%n]
 		mfThing := mf.Things[i%n]
 
 		if cfg.MQTT.TLS.MTLS {
@@ -132,7 +132,7 @@ func Benchmark(cfg Config) {
 			BrokerURL:  cfg.MQTT.Broker.URL,
 			BrokerUser: mfThing.ThingID,
 			BrokerPass: mfThing.ThingKey,
-			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfConn.ChannelID),
+			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfChann.ChannelID),
 			MsgSize:    cfg.MQTT.Message.Size,
 			MsgCount:   cfg.Test.Count,
 			MsgQoS:     byte(cfg.MQTT.Message.QoS),
@@ -155,7 +155,7 @@ func Benchmark(cfg Config) {
 	start := time.Now()
 	// Publishers
 	for i := 0; i < cfg.Test.Pubs; i++ {
-		mfConn := mf.Channels[i%n]
+		mfChann := mf.Channels[i%n]
 		mfThing := mf.Things[i%n]
 
 		if cfg.MQTT.TLS.MTLS {
@@ -170,7 +170,7 @@ func Benchmark(cfg Config) {
 			BrokerURL:  cfg.MQTT.Broker.URL,
 			BrokerUser: mfThing.ThingID,
 			BrokerPass: mfThing.ThingKey,
-			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfConn.ChannelID),
+			MsgTopic:   fmt.Sprintf("channels/%s/messages/test", mfChann.ChannelID),
 			MsgSize:    cfg.MQTT.Message.Size,
 			MsgCount:   cfg.Test.Count,
 			MsgQoS:     byte(cfg.MQTT.Message.QoS),

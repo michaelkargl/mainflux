@@ -120,7 +120,7 @@ func Provision(conf Config) {
 	things := make([]*sdk.Thing, conf.Num)
 	channels := make([]*string, conf.Num)
 
-	fmt.Println("# list of things that can be connected to MQTT broker")
+	fmt.Println("# List of things that can be connected to MQTT broker")
 
 	for i := 0; i < conf.Num; i++ {
 		tid, err := s.CreateThing(sdk.Thing{Name: fmt.Sprintf("%s-thing-%d", conf.Prefix, i)}, token)
@@ -200,9 +200,7 @@ func Provision(conf Config) {
 		}
 
 		// Print output
-		fmt.Println("[[things]]")
-		fmt.Printf("thing_id = \"%s\"\n", tid)
-		fmt.Printf("thing_key = \"%s\"\n", thing.Key)
+		fmt.Printf("[[things]]\nthing_id = \"%s\"\nthing_key = \"%s\"\n", tid, thing.Key)
 		if conf.SSL {
 			fmt.Printf("mtls_cert = \"\"\"%s\"\"\"\n", cert)
 			fmt.Printf("mtls_key = \"\"\"%s\"\"\"\n", key)
@@ -211,8 +209,8 @@ func Provision(conf Config) {
 	}
 
 	var wg sync.WaitGroup
-	fmt.Println("# list of channels that things can publish to")
-	fmt.Println("# each channel is connected to each thing from things list")
+	fmt.Printf("# List of channels that things can publish to\n" +
+		"# each channel is connected to each thing from things list\n")
 	for i := 0; i < conf.Num; i++ {
 		for j := 0; j < conf.Num; j++ {
 			wg.Add(1)
@@ -221,9 +219,7 @@ func Provision(conf Config) {
 				s.ConnectThing(things[j].ID, *channels[i], token)
 			}(&wg, i, j)
 		}
-		fmt.Println("[[channels]]")
-		fmt.Printf("channel_id = \"%s\"\n", *channels[i])
-		fmt.Println("")
+		fmt.Printf("[[channels]]\nchannel_id = \"%s\"\n\n", *channels[i])
 	}
 	wg.Wait()
 }
