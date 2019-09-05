@@ -73,6 +73,12 @@ type mainflux struct {
 	Channels []mfChannel `toml:"channels" mapstructure:"channels"`
 }
 
+type testMsg struct {
+	ClientID string
+	Sent     float64
+	Payload  []byte
+}
+
 // Config struct holds benchmark configuration
 type Config struct {
 	MQTT mqttConfig   `toml:"mqtt" mapstructure:"mqtt"`
@@ -118,10 +124,18 @@ func Benchmark(cfg Config) {
 	n := len(mf.Channels)
 	var cert tls.Certificate
 
-	msg := buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
+	var msg senml.SenML
+	getPload := getBytePayload
+
+	if len(cfg.MQTT.Message.Payload) > 0 {
+		msg = buildSenML(cfg.MQTT.Message.Size, cfg.MQTT.Message.Payload)
+		getPload = getSenMLPayload
+
+	}
 	getSenML := func() senml.SenML {
 		return msg
 	}
+
 	// Subscribers
 	for i := 0; i < cfg.Test.Subs; i++ {
 		mfConn := mf.Channels[i%n]
@@ -188,7 +202,7 @@ func Benchmark(cfg Config) {
 			CA:         caByte,
 			ClientCert: cert,
 			Retain:     cfg.MQTT.Message.Retain,
-			Message:    getSenMLPayload,
+			Message:    getPload,
 			GetSenML:   getSenML,
 		}
 
@@ -236,7 +250,6 @@ func Benchmark(cfg Config) {
 			}
 		}
 	}()
-	<-finishPub
 	<-finishSub
 
 	totalTime := time.Now().Sub(start)
@@ -249,13 +262,17 @@ func Benchmark(cfg Config) {
 	printResults(results, totals, cfg.MQTT.Message.Format, cfg.Log.Quiet)
 }
 
-func buildSenML(sz int, payload string) senml.SenML {
-
+func getSenMLTimeStamp() senml.SenMLRecord {
 	t := (float64)(time.Now().UnixNano())
 	timeStamp := senml.SenMLRecord{
 		BaseName: "pub-2019-08-31T12:38:25.139715762+02:00-57",
 		Value:    &t,
 	}
+	return timeStamp
+}
+
+func buildSenML(sz int, payload string) senml.SenML {
+	timeStamp := getSenMLTimeStamp()
 
 	tsByte, err := json.Marshal(timeStamp)
 	if err != nil || len(payload) == 0 {
@@ -293,6 +310,32 @@ func buildSenML(sz int, payload string) senml.SenML {
 	}
 
 	return s
+}
+
+func getBytePayload(cid string, time float64, getSenML func() senml.SenML) ([]byte, error) {
+
+	msg := testMsg{}
+	msg.ClientID = cid
+	msg.Sent = time
+
+	tsByte, err := json.Marshal(msg)
+	if err != nil {
+		log.Fatalf("Failed to create test message")
+	}
+
+	// Need to sort this out
+	m := 500 - len(tsByte)
+	if m < 0 {
+		return tsByte, nil
+	}
+	add := make([]byte, m)
+	msg.Payload = add
+
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
 
 func getSenMLPayload(cid string, time float64, getSenML func() senml.SenML) ([]byte, error) {

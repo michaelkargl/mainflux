@@ -132,7 +132,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
 	go func() {
-		fmt.Printf("go func\n")
 		for {
 			select {
 			case <-doneRec:
@@ -182,7 +181,7 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 			(*subsResults)[id] = arrivalTimes
 		}
 		a := *arrivalTimes
-		a = append(a, arrival-timeSent)
+		a = append(a, (arrival - timeSent))
 		(*subsResults)[id] = &a
 		log.Printf("msg-%d - %s del:%f, snt:%f, dif:%f\n\n", i, string(msg.Payload()), arrival, timeSent, arrival-timeSent)
 		i++

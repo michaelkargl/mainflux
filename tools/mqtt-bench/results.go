@@ -82,10 +82,10 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 
 			times := mat.NewDense(1, len(*sr[res.ID]), *sr[res.ID])
 
-			subTimeRunResults.MsgTimeMin = mat.Min(times)
-			subTimeRunResults.MsgTimeMax = mat.Max(times)
-			subTimeRunResults.MsgTimeMean = stat.Mean(*(sr[res.ID]), nil)
-			subTimeRunResults.MsgTimeStd = stat.StdDev(*(sr[res.ID]), nil)
+			subTimeRunResults.MsgTimeMin = mat.Min(times) / 1000
+			subTimeRunResults.MsgTimeMax = mat.Max(times) / 1000
+			subTimeRunResults.MsgTimeMean = stat.Mean(*(sr[res.ID]), nil) / 1000
+			subTimeRunResults.MsgTimeStd = stat.StdDev(*(sr[res.ID]), nil) / 1000
 
 		}
 		res.MsgDelTimeMin = subTimeRunResults.MsgTimeMin
@@ -155,7 +155,7 @@ func printResults(results []*runResults, totals *totalResults, format string, qu
 				fmt.Printf("Msg time min (us):   %.3f\n", res.MsgTimeMin)
 				fmt.Printf("Msg time max (us):   %.3f\n", res.MsgTimeMax)
 				fmt.Printf("Msg time mean (us):  %.3f\n", res.MsgTimeMean)
-				fmt.Printf("Msg time std (us):   %.3f\n", res.MsgTimeStd)
+				fmt.Printf("Msg time std (us):   %.3f\n\n", res.MsgTimeStd)
 
 				fmt.Printf("Msg del time min (us):   %.3f\n", res.MsgDelTimeMin)
 				fmt.Printf("Msg del time max (us):   %.3f\n", res.MsgDelTimeMax)
@@ -173,6 +173,11 @@ func printResults(results []*runResults, totals *totalResults, format string, qu
 		fmt.Printf("Msg time max (us):           %.3f\n", totals.MsgTimeMax)
 		fmt.Printf("Msg time mean mean (us):     %.3f\n", totals.MsgTimeMeanAvg)
 		fmt.Printf("Msg time mean std (us):      %.3f\n", totals.MsgTimeMeanStd)
+
+		fmt.Printf("Msg del time min (us):   %.3f\n", totals.MsgDelTimeMin)
+		fmt.Printf("Msg del time max (us):   %.3f\n", totals.MsgDelTimeMax)
+		fmt.Printf("Msg del time mean (us):  %.3f\n", totals.MsgDelTimeMeanAvg)
+		fmt.Printf("Msg del time std (us):   %.3f\n", totals.MsgDelTimeMeanStd)
 
 		fmt.Printf("Average Bandwidth (msg/sec): %.3f\n", totals.AvgMsgsPerSec)
 		fmt.Printf("Total Bandwidth (msg/sec):   %.3f\n", totals.TotalMsgsPerSec)
