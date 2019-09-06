@@ -66,19 +66,6 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 	totals.MsgTimeMin = results[0].MsgTimeMin
 	for i, res := range results {
 
-		if len(sr) > 0 {
-			a, ok := sr[res.ID]
-			if ok {
-				times := mat.NewDense(1, len(*a), *a)
-				res.MsgDelTimeMin = mat.Min(times) / 1000
-				res.MsgDelTimeMax = mat.Max(times) / 1000
-				res.MsgDelTimeMean = stat.Mean(*(sr[res.ID]), nil) / 1000
-				res.MsgDelTimeStd = stat.StdDev(*(sr[res.ID]), nil) / 1000
-			} else {
-				log.Println("No data for del ", res.ID)
-			}
-		}
-
 		totals.Successes += res.Successes
 		totals.Failures += res.Failures
 		totals.TotalMsgsPerSec += res.MsgsPerSec
@@ -104,6 +91,14 @@ func calculateTotalResults(results []*runResults, totalTime time.Duration, sr su
 		msgsPerSecs[i] = res.MsgsPerSec
 		runTimes[i] = res.RunTime
 		bws[i] = res.MsgsPerSec
+	}
+
+	for _, v := range sr {
+		times := mat.NewDense(1, len(*v), *v)
+		totals.MsgDelTimeMin = mat.Min(times) / 1000
+		totals.MsgDelTimeMax = mat.Max(times) / 1000
+		totals.MsgDelTimeMeanAvg = stat.Mean(*v, nil) / 1000
+		totals.MsgDelTimeMeanStd = stat.StdDev(*v, nil) / 1000
 	}
 
 	totals.Ratio = float64(totals.Successes) / float64(totals.Successes+totals.Failures)

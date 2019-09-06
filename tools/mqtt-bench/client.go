@@ -93,7 +93,6 @@ func (c *Client) runPublisher(r chan *runResults) {
 			times = append(times, diff)
 		case <-donePub:
 			// Calculate results
-			log.Printf("done for %s\n ratio %d  %d\n", runResults.ID, runResults.Successes, runResults.Successes+runResults.Failures)
 			duration := time.Now().Sub(started)
 			timeMatrix := mat.NewDense(1, len(times), times)
 			runResults.MsgTimeMin = mat.Min(timeMatrix)
@@ -111,8 +110,8 @@ func (c *Client) runPublisher(r chan *runResults) {
 }
 
 // Subscriber
-func (c *Client) runSubscriber(wg *sync.WaitGroup, subsResults *subsResults, tot int) {
-	c.subscribe(wg, subsResults, tot)
+func (c *Client) runSubscriber(wg *sync.WaitGroup, tot int, donePub *chan bool, res *chan *map[string](*[]float64)) {
+	c.subscribe(wg, tot, donePub, res)
 }
 
 func (c *Client) generate(ch chan *message, done chan bool) {
@@ -129,10 +128,25 @@ func (c *Client) generate(ch chan *message, done chan bool) {
 	return
 }
 
-func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int) {
+func (c *Client) subscribe(wg *sync.WaitGroup, tot int, donePub *chan bool, res *chan *map[string](*[]float64)) {
 	clientID := fmt.Sprintf("sub-%v-%v", time.Now().Format(time.RFC3339Nano), c.ID)
 	c.ID = clientID
-	i := 0
+	subsResults := make(map[string](*[]float64), 1)
+	i := 1
+	a := []float64{}
+
+	go func() {
+		for {
+			select {
+			case <-*donePub:
+				fmt.Printf("finished publishing, close sub %s\n", c.ID)
+				time.Sleep(2 * time.Second)
+				subsResults[c.MsgTopic] = &a
+				*res <- &subsResults
+				return
+			}
+		}
+	}()
 
 	onConnected := func(client mqtt.Client) {
 		wg.Done()
@@ -151,7 +165,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 	token := (*c.mqttClient).Subscribe(c.MsgTopic, c.MsgQoS, func(cl mqtt.Client, msg mqtt.Message) {
 
 		arrival := float64(time.Now().UnixNano())
-		var id string
 		var timeSent float64
 
 		if c.GetSenML() != nil {
@@ -159,30 +172,22 @@ func (c *Client) subscribe(wg *sync.WaitGroup, subsResults *subsResults, tot int
 			if err != nil && !c.Quiet {
 				log.Printf("Failed to decode message %s\n", err.Error())
 			}
-			id = mp.Records[0].BaseName
 			timeSent = *mp.Records[0].Value
 		} else {
 			tst := testMsg{}
 			json.Unmarshal(msg.Payload(), &tst)
-			id = tst.ClientID
 			timeSent = tst.Sent
 		}
 
-		arrivalTimes, ok := (*subsResults)[id]
-		if !ok {
-			t := []float64{}
-			arrivalTimes = &t
-			(*subsResults)[id] = arrivalTimes
-		}
-		a := *arrivalTimes
 		a = append(a, (arrival - timeSent))
-		(*subsResults)[id] = &a
 		i++
+		if i == tot {
+			subsResults[c.MsgTopic] = &a
+			*res <- &subsResults
+		}
 
 	})
-
 	token.Wait()
-
 }
 
 func (c *Client) publish(in, out chan *message, doneGen chan bool, donePub chan bool) {

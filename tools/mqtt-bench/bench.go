@@ -99,7 +99,7 @@ func Benchmark(cfg Config) {
 	var err error
 
 	checkConnection(cfg.MQTT.Broker.URL, 1)
-	subsResults := make(subsResults)
+	var subsResults map[string](*[]float64)
 	var caByte []byte
 	if cfg.MQTT.TLS.MTLS {
 		caFile, err := os.Open(cfg.MQTT.TLS.CA)
@@ -107,7 +107,6 @@ func Benchmark(cfg Config) {
 		if err != nil {
 			fmt.Println(err)
 		}
-
 		caByte, _ = ioutil.ReadAll(caFile)
 	}
 
@@ -117,6 +116,11 @@ func Benchmark(cfg Config) {
 	}
 
 	resCh := make(chan *runResults)
+	donePub := make(chan bool)
+	finishedPub := make(chan bool)
+	finishedSub := make(chan bool)
+
+	resR := make(chan *map[string](*[]float64))
 	startStamp := time.Now()
 
 	n := len(mf.Channels)
@@ -166,7 +170,7 @@ func Benchmark(cfg Config) {
 
 		wg.Add(1)
 
-		go c.runSubscriber(&wg, &subsResults, cfg.Test.Count*cfg.Test.Pubs)
+		go c.runSubscriber(&wg, cfg.Test.Count*cfg.Test.Pubs, &donePub, &resR)
 	}
 
 	wg.Wait()
@@ -212,15 +216,41 @@ func Benchmark(cfg Config) {
 	if cfg.Test.Pubs > 0 {
 		results = make([]*runResults, cfg.Test.Pubs)
 	}
-
-	for i := 0; i < cfg.Test.Pubs; i++ {
-		select {
-		case result := <-resCh:
-			{
-				results[i] = result
+	// Wait for publishers to be don
+	go func() {
+		for i := 0; i < cfg.Test.Pubs; i++ {
+			select {
+			case result := <-resCh:
+				{
+					results[i] = result
+				}
 			}
 		}
+		finishedPub <- true
+	}()
+
+	go func() {
+		for i := 0; i < cfg.Test.Subs; i++ {
+			select {
+			case r := <-resR:
+				{
+					for k, v := range *r {
+						subsResults[k] = v
+					}
+				}
+			}
+		}
+		finishedSub <- true
+	}()
+
+	<-finishedPub
+	// Send signal to subscribers that all the publishers are done
+	for i := 0; i < cfg.Test.Subs; i++ {
+		donePub <- true
 	}
+
+	<-finishedSub
+
 	totalTime := time.Now().Sub(start)
 	totals := calculateTotalResults(results, totalTime, subsResults)
 	if totals == nil {
