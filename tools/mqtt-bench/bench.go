@@ -289,7 +289,7 @@ func buildSenML(sz int, payload string) senml.SenML {
 		log.Fatalf("Failed to create test message")
 	}
 
-	// how many records to make message long sz bytes
+	// How many records to make message long sz bytes
 	n := (sz-len(tsByte))/len(msgByte) + 1
 	if sz < len(tsByte) {
 		n = 1
@@ -298,8 +298,7 @@ func buildSenML(sz int, payload string) senml.SenML {
 	records := make([]senml.SenMLRecord, n)
 	records[0] = timeStamp
 	for i := 1; i < n; i++ {
-		// is this needed
-		// i think we need id to be saved with db writer to t
+		// Timestamp for each record when saving to db
 		sml.Time = float64(time.Now().UnixNano())
 		records[i] = sml
 	}

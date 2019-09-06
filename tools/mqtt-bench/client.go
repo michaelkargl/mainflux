@@ -139,7 +139,6 @@ func (c *Client) subscribe(wg *sync.WaitGroup, tot int, donePub *chan bool, res 
 		for {
 			select {
 			case <-*donePub:
-				fmt.Printf("finished publishing, close sub %s\n", c.ID)
 				time.Sleep(2 * time.Second)
 				subsResults[c.MsgTopic] = &a
 				*res <- &subsResults
