@@ -99,6 +99,18 @@ func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, offse
 	return lm.svc.ListThings(ctx, token, offset, limit, name)
 }
 
+func (lm *loggingMiddleware) QueryThing(ctx context.Context, token, id string, offset, limit uint64, metadata interface{}) (_ things.ThingsPage, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method query_things_by_metadata for channel %s took %s to complete", id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s", message, err))
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.QueryThing(ctx, token, id, offset, limit, metadata)
+}
+
 func (lm *loggingMiddleware) ListThingsByChannel(ctx context.Context, token, id string, offset, limit uint64) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method list_things_by_channel for channel %s took %s to complete", id, time.Since(begin))

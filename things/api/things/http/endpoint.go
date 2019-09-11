@@ -111,8 +111,8 @@ func queryThingsEndpoint(svc things.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		
-		page, err := svc.QueryThings(ctx, req.q.token, req.q.id, req.q.offset, req.limit)
+
+		page, err := svc.QueryThing(ctx, req.token, "", req.offset, req.limit, req.query)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,6 @@ func queryThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
 		return res, nil
 	}
-
 
 }
 func listThingsEndpoint(svc things.Service) endpoint.Endpoint {

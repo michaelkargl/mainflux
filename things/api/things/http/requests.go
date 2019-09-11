@@ -141,16 +141,27 @@ type listResourcesReq struct {
 	name   string
 }
 
-type queryStruct struct{
-	token  string
-	offset uint64
-	limit  uint64
+type queryResourceReq struct {
+	token     string
+	offset    uint64
+	limit     uint64
 	attribute string
-	query interface{}
+	query     interface{}
 }
 
-type queryResourceReq struct {
-	q queryStruct
+func (req *queryResourceReq) validate() error {
+	if req.token == "" {
+		return things.ErrUnauthorizedAccess
+	}
+
+	if req.limit == 0 || req.limit > maxLimitSize {
+		return things.ErrMalformedEntity
+	}
+
+	if len(req.attribute) == 0 {
+		return things.ErrMalformedEntity
+	}
+	return nil
 }
 
 func (req *listResourcesReq) validate() error {

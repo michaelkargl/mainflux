@@ -93,6 +93,14 @@ func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, owner stri
 	return trm.repo.RetrieveAll(ctx, owner, offset, limit, name)
 }
 
+func (trm thingRepositoryMiddleware) QueryThing(ctx context.Context, token, id string, offset, limit uint64, metadata interface{}) (things.ThingsPage, error) {
+	span := createSpan(ctx, trm.tracer, retrieveThingsByChannelOp)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.QueryThing(ctx, token, id, offset, limit, metadata)
+}
+
 func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, owner, channel string, offset, limit uint64) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveThingsByChannelOp)
 	defer span.Finish()
