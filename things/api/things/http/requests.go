@@ -141,6 +141,18 @@ type listResourcesReq struct {
 	name   string
 }
 
+type queryStruct struct{
+	token  string
+	offset uint64
+	limit  uint64
+	attribute string
+	query interface{}
+}
+
+type queryResourceReq struct {
+	q queryStruct
+}
+
 func (req *listResourcesReq) validate() error {
 	if req.token == "" {
 		return things.ErrUnauthorizedAccess

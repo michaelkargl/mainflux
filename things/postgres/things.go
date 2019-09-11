@@ -305,6 +305,77 @@ func (tr thingRepository) RetrieveByChannel(_ context.Context, owner, channel st
 	}, nil
 }
 
+func (tr thingRepository) QueryThing(_ context.Context, owner, channel string, offset, limit uint64, metadata interface{}) (things.ThingsPage, error) {
+	// Verify if UUID format is valid to avoid internal Postgres error
+	if _, err := uuid.FromString(channel); err != nil {
+		return things.ThingsPage{}, things.ErrNotFound
+	}
+	queryMap := make(map[string]interface{})
+
+	err := json.Unmarshal(metadata.([]byte), &queryMap)
+	if err != nil {
+		return things.ThingsPage{}, err
+	}
+
+	serial := queryMap["serial"]
+	//typ := queryMap["type"]
+
+	q := fmt.Sprintf(`SELECT id, name, key, metadata
+		  FROM things 
+		  WHERE metadata->'%s' = '%s'
+		  ORDER BY th.id
+		  LIMIT :limit
+		  OFFSET :offset;`, "serial", serial)
+
+	params := map[string]interface{}{
+		"owner":   owner,
+		"channel": channel,
+		"limit":   limit,
+		"offset":  offset,
+	}
+
+	rows, err := tr.db.NamedQuery(q, params)
+	if err != nil {
+		return things.ThingsPage{}, err
+	}
+	defer rows.Close()
+
+	items := []things.Thing{}
+	for rows.Next() {
+		dbth := dbThing{Owner: owner}
+		if err := rows.StructScan(&dbth); err != nil {
+			return things.ThingsPage{}, err
+		}
+
+		th, err := toThing(dbth)
+		if err != nil {
+			return things.ThingsPage{}, err
+		}
+
+		items = append(items, th)
+	}
+
+	q = `SELECT COUNT(*)
+	     FROM things th
+	     INNER JOIN connections co
+	     ON th.id = co.thing_id
+	     WHERE th.owner = $1 AND co.channel_id = $2;`
+
+	var total uint64
+	if err := tr.db.Get(&total, q, owner, channel); err != nil {
+		return things.ThingsPage{}, err
+	}
+
+	return things.ThingsPage{
+		Things: items,
+		PageMetadata: things.PageMetadata{
+			Total:  total,
+			Offset: offset,
+			Limit:  limit,
+		},
+	}, nil
+}
+
 func (tr thingRepository) Remove(_ context.Context, owner, id string) error {
 	dbth := dbThing{
 		ID:    id,

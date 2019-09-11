@@ -97,6 +97,12 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service) http.Handler {
 		opts...,
 	))
 
+	r.Get("/things/q", kithttp.NewServer(
+		kitot.TraceServer(tracer, "query_things")(queryThingsEndpoint(svc)),
+		decodeList,
+		encodeResponse,
+		opts...,
+	))
 	r.Post("/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_channel")(createChannelEndpoint(svc)),
 		decodeChannelCreation,

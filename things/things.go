@@ -54,6 +54,7 @@ type ThingRepository interface {
 	// user and connected to specified channel.
 	RetrieveByChannel(context.Context, string, string, uint64, uint64) (ThingsPage, error)
 
+	QueryThing(context.Context, string, string, uint64, uint64, interface{}) (ThingsPage, error)
 	// Remove removes the thing having the provided identifier, that is owned
 	// by the specified user.
 	Remove(context.Context, string, string) error
