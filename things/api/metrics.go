@@ -85,7 +85,7 @@ func (ms *metricsMiddleware) QueryThing(ctx context.Context, token, id string, o
 		ms.latency.With("method", "list_things_by_channel").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ListThingsByChannel(ctx, token, id, offset, limit)
+	return ms.svc.QueryThing(ctx, token, id, offset, limit, metadata)
 }
 
 func (ms *metricsMiddleware) ListThingsByChannel(ctx context.Context, token, id string, offset, limit uint64) (things.ThingsPage, error) {

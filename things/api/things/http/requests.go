@@ -135,18 +135,19 @@ func (req viewResourceReq) validate() error {
 }
 
 type listResourcesReq struct {
-	token  string
-	offset uint64
-	limit  uint64
-	name   string
+	token    string
+	offset   uint64
+	limit    uint64
+	name     string
+	metadata interface{}
 }
 
 type queryResourceReq struct {
-	token     string
-	offset    uint64
-	limit     uint64
-	attribute string
-	query     interface{}
+	token    string
+	offset   uint64
+	limit    uint64
+	name     string
+	metadata interface{}
 }
 
 func (req *queryResourceReq) validate() error {
@@ -158,9 +159,6 @@ func (req *queryResourceReq) validate() error {
 		return things.ErrMalformedEntity
 	}
 
-	if len(req.attribute) == 0 {
-		return things.ErrMalformedEntity
-	}
 	return nil
 }
 

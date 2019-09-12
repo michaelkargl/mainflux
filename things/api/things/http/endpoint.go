@@ -112,7 +112,7 @@ func queryThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.QueryThing(ctx, req.token, "", req.offset, req.limit, req.query)
+		page, err := svc.QueryThing(ctx, req.token, "", req.offset, req.limit, req.metadata)
 		if err != nil {
 			return nil, err
 		}

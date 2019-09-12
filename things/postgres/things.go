@@ -180,7 +180,7 @@ func (tr thingRepository) RetrieveAll(_ context.Context, owner string, offset, l
 	}
 
 	q := fmt.Sprintf(`SELECT id, name, key, metadata FROM things
-	      WHERE owner = :owner %s ORDER BY id LIMIT :limit OFFSET :offset;`, nq)
+	      WHERE owner = :owner %s AND metadata->'%s' = '%s' ORDER BY id LIMIT :limit OFFSET :offset;`, nq, "serial", "yrdy")
 
 	params := map[string]interface{}{
 		"owner":  owner,
@@ -307,6 +307,7 @@ func (tr thingRepository) RetrieveByChannel(_ context.Context, owner, channel st
 
 func (tr thingRepository) QueryThing(_ context.Context, owner, channel string, offset, limit uint64, metadata interface{}) (things.ThingsPage, error) {
 	// Verify if UUID format is valid to avoid internal Postgres error
+	fmt.Printf("this is query thing")
 	if _, err := uuid.FromString(channel); err != nil {
 		return things.ThingsPage{}, things.ErrNotFound
 	}
@@ -317,15 +318,14 @@ func (tr thingRepository) QueryThing(_ context.Context, owner, channel string, o
 		return things.ThingsPage{}, err
 	}
 
-	serial := queryMap["serial"]
 	//typ := queryMap["type"]
 
 	q := fmt.Sprintf(`SELECT id, name, key, metadata
 		  FROM things 
-		  WHERE metadata->'%s' = '%s'
+		  WHERE metadata @> ?
 		  ORDER BY th.id
 		  LIMIT :limit
-		  OFFSET :offset;`, "serial", serial)
+		  OFFSET :offset;`)
 
 	params := map[string]interface{}{
 		"owner":   owner,

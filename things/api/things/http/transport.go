@@ -30,6 +30,7 @@ const (
 	offset      = "offset"
 	limit       = "limit"
 	name        = "name"
+	metadata    = "metadata"
 
 	defOffset = 0
 	defLimit  = 10
@@ -97,12 +98,13 @@ func MakeHandler(tracer opentracing.Tracer, svc things.Service) http.Handler {
 		opts...,
 	))
 
-	r.Get("/things/q", kithttp.NewServer(
+	r.Get("/metadata/q", kithttp.NewServer(
 		kitot.TraceServer(tracer, "query_things")(queryThingsEndpoint(svc)),
-		decodeList,
+		decodeList1,
 		encodeResponse,
 		opts...,
 	))
+
 	r.Post("/channels", kithttp.NewServer(
 		kitot.TraceServer(tracer, "create_channel")(createChannelEndpoint(svc)),
 		decodeChannelCreation,
@@ -274,6 +276,38 @@ func decodeList(_ context.Context, r *http.Request) (interface{}, error) {
 	return req, nil
 }
 
+func decodeList1(_ context.Context, r *http.Request) (interface{}, error) {
+	o, err := readUintQuery(r, offset, defOffset)
+	if err != nil {
+		return nil, err
+	}
+
+	l, err := readUintQuery(r, limit, defLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	n, err := readStringQuery(r, name)
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := readMetadataQuery(r, metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	req := queryResourceReq{
+		token:    r.Header.Get("Authorization"),
+		offset:   o,
+		limit:    l,
+		name:     n,
+		metadata: m,
+	}
+
+	return req, nil
+}
+
 func decodeListByConnection(_ context.Context, r *http.Request) (interface{}, error) {
 	o, err := readUintQuery(r, offset, defOffset)
 	if err != nil {
@@ -385,4 +419,22 @@ func readStringQuery(r *http.Request, key string) (string, error) {
 	}
 
 	return vals[0], nil
+}
+
+func readMetadataQuery(r *http.Request, key string) (interface{}, error) {
+	vals := bone.GetQuery(r, key)
+	if len(vals) > 1 {
+		return "", errInvalidQueryParams
+	}
+
+	if len(vals) == 0 {
+		return "", nil
+	}
+	m := make(map[string]interface{})
+	err := json.Unmarshal([]byte(vals[0]), &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
