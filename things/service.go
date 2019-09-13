@@ -201,6 +201,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, offset, l
 	if err != nil {
 		return ThingsPage{}, ErrUnauthorizedAccess
 	}
+
 	return ts.things.RetrieveAll(ctx, res.GetValue(), offset, limit, name, metadata)
 }
 
@@ -209,6 +210,7 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, channel
 	if err != nil {
 		return ThingsPage{}, ErrUnauthorizedAccess
 	}
+
 	return ts.things.RetrieveByChannel(ctx, res.GetValue(), channel, offset, limit)
 }
 
