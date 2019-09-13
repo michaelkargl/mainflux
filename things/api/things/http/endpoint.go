@@ -104,43 +104,6 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
-// func queryThingsEndpoint(svc things.Service) endpoint.Endpoint {
-
-// 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-// 		req := request.(queryResourceReq)
-
-// 		if err := req.validate(); err != nil {
-// 			return nil, err
-// 		}
-
-// 		page, err := svc.QueryThing(ctx, req.token, "", req.offset, req.limit, req.metadata)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		res := thingsPageRes{
-// 			pageRes: pageRes{
-// 				Total:  page.Total,
-// 				Offset: page.Offset,
-// 				Limit:  page.Limit,
-// 			},
-// 			Things: []viewThingRes{},
-// 		}
-// 		for _, thing := range page.Things {
-// 			view := viewThingRes{
-// 				ID:       thing.ID,
-// 				Owner:    thing.Owner,
-// 				Key:      thing.Key,
-// 				Name:     thing.Name,
-// 				Metadata: thing.Metadata,
-// 			}
-// 			res.Things = append(res.Things, view)
-// 		}
-
-// 		return res, nil
-// 	}
-
-// }
 func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listResourcesReq)

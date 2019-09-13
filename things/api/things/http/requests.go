@@ -142,26 +142,6 @@ type listResourcesReq struct {
 	metadata interface{}
 }
 
-type queryResourceReq struct {
-	token    string
-	offset   uint64
-	limit    uint64
-	name     string
-	metadata interface{}
-}
-
-func (req *queryResourceReq) validate() error {
-	if req.token == "" {
-		return things.ErrUnauthorizedAccess
-	}
-
-	if req.limit == 0 || req.limit > maxLimitSize {
-		return things.ErrMalformedEntity
-	}
-
-	return nil
-}
-
 func (req *listResourcesReq) validate() error {
 	if req.token == "" {
 		return things.ErrUnauthorizedAccess
