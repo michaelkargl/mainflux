@@ -48,13 +48,12 @@ type ThingRepository interface {
 	RetrieveByKey(context.Context, string) (string, error)
 
 	// RetrieveAll retrieves the subset of things owned by the specified user.
-	RetrieveAll(context.Context, string, uint64, uint64, string) (ThingsPage, error)
+	RetrieveAll(context.Context, string, uint64, uint64, string, interface{}) (ThingsPage, error)
 
 	// RetrieveByChannel retrieves the subset of things owned by the specified
 	// user and connected to specified channel.
 	RetrieveByChannel(context.Context, string, string, uint64, uint64) (ThingsPage, error)
 
-	QueryThing(context.Context, string, string, uint64, uint64, interface{}) (ThingsPage, error)
 	// Remove removes the thing having the provided identifier, that is owned
 	// by the specified user.
 	Remove(context.Context, string, string) error

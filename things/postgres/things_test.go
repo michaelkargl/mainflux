@@ -436,7 +436,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		page, err := thingRepo.RetrieveAll(context.Background(), tc.owner, tc.offset, tc.limit, tc.name)
+		page, err := thingRepo.RetrieveAll(context.Background(), tc.owner, tc.offset, tc.limit, tc.name, nil)
 		size := uint64(len(page.Things))
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.size, size))
 		assert.Equal(t, tc.total, page.Total, fmt.Sprintf("%s: expected %d got %d\n", desc, tc.total, page.Total))

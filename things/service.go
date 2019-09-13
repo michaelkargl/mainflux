@@ -50,14 +50,12 @@ type Service interface {
 
 	// ListThings retrieves data about subset of things that belongs to the
 	// user identified by the provided key.
-	ListThings(context.Context, string, uint64, uint64, string) (ThingsPage, error)
+	ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata interface{}) (ThingsPage, error)
 
 	// ListThingsByChannel retrieves data about subset of things that are
 	// connected to specified channel and belong to the user identified by
 	// the provided key.
 	ListThingsByChannel(context.Context, string, string, uint64, uint64) (ThingsPage, error)
-
-	QueryThing(context.Context, string, string, uint64, uint64, interface{}) (ThingsPage, error)
 
 	// RemoveThing removes the thing identified with the provided ID, that
 	// belongs to the user identified by the provided key.
@@ -198,22 +196,12 @@ func (ts *thingsService) ViewThing(ctx context.Context, token, id string) (Thing
 	return ts.things.RetrieveByID(ctx, res.GetValue(), id)
 }
 
-func (ts *thingsService) ListThings(ctx context.Context, token string, offset, limit uint64, name string) (ThingsPage, error) {
+func (ts *thingsService) ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata interface{}) (ThingsPage, error) {
 	res, err := ts.users.Identify(ctx, &mainflux.Token{Value: token})
 	if err != nil {
 		return ThingsPage{}, ErrUnauthorizedAccess
 	}
-
-	return ts.things.RetrieveAll(ctx, res.GetValue(), offset, limit, name)
-}
-
-func (ts *thingsService) QueryThing(ctx context.Context, token, channel string, offset, limit uint64, metadata interface{}) (ThingsPage, error) {
-	res, err := ts.users.Identify(ctx, &mainflux.Token{Value: token})
-	if err != nil {
-		return ThingsPage{}, ErrUnauthorizedAccess
-	}
-
-	return ts.things.QueryThing(ctx, res.GetValue(), channel, offset, limit, metadata)
+	return ts.things.RetrieveAll(ctx, res.GetValue(), offset, limit, name, metadata)
 }
 
 func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, channel string, offset, limit uint64) (ThingsPage, error) {

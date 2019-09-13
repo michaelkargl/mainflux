@@ -103,43 +103,44 @@ func viewThingEndpoint(svc things.Service) endpoint.Endpoint {
 		return res, nil
 	}
 }
-func queryThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(queryResourceReq)
+// func queryThingsEndpoint(svc things.Service) endpoint.Endpoint {
 
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
+// 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+// 		req := request.(queryResourceReq)
 
-		page, err := svc.QueryThing(ctx, req.token, "", req.offset, req.limit, req.metadata)
-		if err != nil {
-			return nil, err
-		}
+// 		if err := req.validate(); err != nil {
+// 			return nil, err
+// 		}
 
-		res := thingsPageRes{
-			pageRes: pageRes{
-				Total:  page.Total,
-				Offset: page.Offset,
-				Limit:  page.Limit,
-			},
-			Things: []viewThingRes{},
-		}
-		for _, thing := range page.Things {
-			view := viewThingRes{
-				ID:       thing.ID,
-				Owner:    thing.Owner,
-				Key:      thing.Key,
-				Name:     thing.Name,
-				Metadata: thing.Metadata,
-			}
-			res.Things = append(res.Things, view)
-		}
+// 		page, err := svc.QueryThing(ctx, req.token, "", req.offset, req.limit, req.metadata)
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-		return res, nil
-	}
+// 		res := thingsPageRes{
+// 			pageRes: pageRes{
+// 				Total:  page.Total,
+// 				Offset: page.Offset,
+// 				Limit:  page.Limit,
+// 			},
+// 			Things: []viewThingRes{},
+// 		}
+// 		for _, thing := range page.Things {
+// 			view := viewThingRes{
+// 				ID:       thing.ID,
+// 				Owner:    thing.Owner,
+// 				Key:      thing.Key,
+// 				Name:     thing.Name,
+// 				Metadata: thing.Metadata,
+// 			}
+// 			res.Things = append(res.Things, view)
+// 		}
 
-}
+// 		return res, nil
+// 	}
+
+// }
 func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(listResourcesReq)
@@ -148,7 +149,7 @@ func listThingsEndpoint(svc things.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		page, err := svc.ListThings(ctx, req.token, req.offset, req.limit, req.name)
+		page, err := svc.ListThings(ctx, req.token, req.offset, req.limit, req.name, req.metadata)
 		if err != nil {
 			return nil, err
 		}

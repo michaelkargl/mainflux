@@ -85,20 +85,12 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key stri
 	return trm.repo.RetrieveByKey(ctx, key)
 }
 
-func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, owner string, offset, limit uint64, name string) (things.ThingsPage, error) {
+func (trm thingRepositoryMiddleware) RetrieveAll(ctx context.Context, owner string, offset, limit uint64, name string, metadata interface{}) (things.ThingsPage, error) {
 	span := createSpan(ctx, trm.tracer, retrieveAllThingsOp)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.RetrieveAll(ctx, owner, offset, limit, name)
-}
-
-func (trm thingRepositoryMiddleware) QueryThing(ctx context.Context, token, id string, offset, limit uint64, metadata interface{}) (things.ThingsPage, error) {
-	span := createSpan(ctx, trm.tracer, retrieveThingsByChannelOp)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return trm.repo.QueryThing(ctx, token, id, offset, limit, metadata)
+	return trm.repo.RetrieveAll(ctx, owner, offset, limit, name, metadata)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByChannel(ctx context.Context, owner, channel string, offset, limit uint64) (things.ThingsPage, error) {
