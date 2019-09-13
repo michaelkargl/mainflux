@@ -505,7 +505,7 @@ parameters:
     required: false
   Metadata
     name: metadata
-    descripton: Metadata filter. Filtering is performed matching the parametar with metadata on top level. Parametar is json
+    descripton: Metadata filter. Filtering is performed matching the parametar with metadata on top level. Parametar is json.
     in: query
     type: string
     minimum: 0
