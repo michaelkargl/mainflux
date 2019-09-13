@@ -50,7 +50,7 @@ type Service interface {
 
 	// ListThings retrieves data about subset of things that belongs to the
 	// user identified by the provided key.
-	ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata interface{}) (ThingsPage, error)
+	ListThings(context.Context, string, uint64, uint64, string, interface{}) (ThingsPage, error)
 
 	// ListThingsByChannel retrieves data about subset of things that are
 	// connected to specified channel and belong to the user identified by
@@ -209,7 +209,6 @@ func (ts *thingsService) ListThingsByChannel(ctx context.Context, token, channel
 	if err != nil {
 		return ThingsPage{}, ErrUnauthorizedAccess
 	}
-
 	return ts.things.RetrieveByChannel(ctx, res.GetValue(), channel, offset, limit)
 }
 
