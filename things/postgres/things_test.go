@@ -9,7 +9,6 @@ package postgres_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -366,8 +365,8 @@ func TestMultiThingRetrieval(t *testing.T) {
 	email := "thing-multi-retrieval@example.com"
 	name := "mainflux"
 	metadata := make(map[string]interface{})
-	err := json.Unmarshal([]byte(`{"serial":"123456","type":"test"}`), &metadata)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err.Error()))
+	metadata["serial"] = "123456"
+	metadata["type"] = "test"
 	idp := uuid.New()
 	thingRepo := postgres.NewThingRepository(db)
 
@@ -393,9 +392,6 @@ func TestMultiThingRetrieval(t *testing.T) {
 		thingRepo.Save(context.Background(), th)
 	}
 
-	mtest := make(map[string]interface{})
-	err = json.Unmarshal([]byte(`{"type":"test"}`), &mtest)
-	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err.Error()))
 	cases := map[string]struct {
 		owner    string
 		offset   uint64
@@ -448,7 +444,7 @@ func TestMultiThingRetrieval(t *testing.T) {
 			limit:    n,
 			size:     n,
 			total:    n,
-			metadata: mtest,
+			metadata: metadata,
 		},
 	}
 
