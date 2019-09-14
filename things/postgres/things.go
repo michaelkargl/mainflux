@@ -187,7 +187,6 @@ func (tr thingRepository) RetrieveAll(_ context.Context, owner string, offset, l
 		  WHERE %s owner = :owner %s ORDER BY id LIMIT :limit OFFSET :offset;`, mq, nq)
 
 	s, _ := json.Marshal(metadata)
-	fmt.Printf("json: %s", string(s))
 	params := map[string]interface{}{
 		"owner":    owner,
 		"limit":    limit,
