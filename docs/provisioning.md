@@ -100,7 +100,7 @@ group of things. In that case, your request should look like:
 curl -s -S -i --cacert docker/ssl/certs/mainflux-server.crt --insecure -H "Authorization: <user_auth_token>" https://localhost/things?offset=0&limit=5
 ```
 
-You can specify `name` and `metadata` parameters in order to fetch specific
+You can specify `name` and/or `metadata` parameters in order to fetch specific
 group of things. When specifiying metadata you can specify just a part of the metadata json you want to match
 
 ```
