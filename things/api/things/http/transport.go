@@ -397,6 +397,7 @@ func readMetadataQuery(r *http.Request, key string) (interface{}, error) {
 	if len(vals) == 0 {
 		return nil, nil
 	}
+
 	m := make(map[string]interface{})
 	err := json.Unmarshal([]byte(vals[0]), &m)
 	if err != nil {
