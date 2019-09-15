@@ -32,7 +32,7 @@ func New(db *sqlx.DB) users.UserRepository {
 }
 
 func (ur userRepository) Save(_ context.Context, user users.User) error {
-	q := `INSERT INTO users (email, password) VALUES (:email, :password)`
+	q := `INSERT INTO users (email, password, metadata) VALUES (:email, :password, :metadata)`
 
 	dbu := toDBUser(user)
 	if _, err := ur.db.NamedExec(q, dbu); err != nil {
@@ -46,7 +46,7 @@ func (ur userRepository) Save(_ context.Context, user users.User) error {
 }
 
 func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.User, error) {
-	q := `SELECT password FROM users WHERE email = $1`
+	q := `SELECT password, metadata FROM users WHERE email = $1`
 
 	dbu := dbUser{
 		Email: email,
@@ -66,12 +66,14 @@ func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.Us
 type dbUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Metadata map[string]interface{}
 }
 
 func toDBUser(u users.User) dbUser {
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
+		Metadata: u.Metadata,
 	}
 }
 
@@ -79,5 +81,6 @@ func toUser(dbu dbUser) users.User {
 	return users.User{
 		Email:    dbu.Email,
 		Password: dbu.Password,
+		Metadata: dbu.Metadata,
 	}
 }
