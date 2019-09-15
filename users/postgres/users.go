@@ -128,9 +128,9 @@ func (m dbMetadata) Value() (driver.Value, error) {
 }
 
 type dbUser struct {
-	Email    string     `db:"email"`
-	Password string     `db:"password"`
-	Metadata dbMetadata `db:"metadata"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Metadata map[string]interface{}
 }
 
 func toDBUser(u users.User) dbUser {
