@@ -88,7 +88,7 @@ func (es eventStore) ViewThing(ctx context.Context, token, id string) (things.Th
 	return es.svc.ViewThing(ctx, token, id)
 }
 
-func (es eventStore) ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata map[string]interface{}) (things.ThingsPage, error) {
+func (es eventStore) ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata things.ThingMetadata) (things.ThingsPage, error) {
 	return es.svc.ListThings(ctx, token, offset, limit, name, metadata)
 }
 
