@@ -391,7 +391,7 @@ func readStringQuery(r *http.Request, key string) (string, error) {
 func readMetadataQuery(r *http.Request, key string) (interface{}, error) {
 	vals := bone.GetQuery(r, key)
 	if len(vals) > 1 {
-		return "", errInvalidQueryParams
+		return nil, errInvalidQueryParams
 	}
 
 	if len(vals) == 0 {
