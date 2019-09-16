@@ -139,7 +139,7 @@ type listResourcesReq struct {
 	offset   uint64
 	limit    uint64
 	name     string
-	metadata interface{}
+	metadata map[string]interface{}
 }
 
 func (req *listResourcesReq) validate() error {

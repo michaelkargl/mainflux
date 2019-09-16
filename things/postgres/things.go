@@ -171,7 +171,7 @@ func (tr thingRepository) RetrieveByKey(_ context.Context, key string) (string, 
 	return id, nil
 }
 
-func (tr thingRepository) RetrieveAll(_ context.Context, owner string, offset, limit uint64, name string, metadata interface{}) (things.ThingsPage, error) {
+func (tr thingRepository) RetrieveAll(_ context.Context, owner string, offset, limit uint64, name string, metadata map[string]interface{}) (things.ThingsPage, error) {
 	name = strings.ToLower(name)
 	nq := ""
 	var m []byte
@@ -180,7 +180,7 @@ func (tr thingRepository) RetrieveAll(_ context.Context, owner string, offset, l
 		nq = `AND LOWER(name) LIKE :name`
 	}
 	mq := ""
-	if len(metadata.(map[string]interface{})) > 0 {
+	if len(metadata) > 0 {
 		mq = `metadata @> :metadata AND`
 	}
 

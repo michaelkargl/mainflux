@@ -48,7 +48,7 @@ type ThingRepository interface {
 	RetrieveByKey(context.Context, string) (string, error)
 
 	// RetrieveAll retrieves the subset of things owned by the specified user.
-	RetrieveAll(context.Context, string, uint64, uint64, string, interface{}) (ThingsPage, error)
+	RetrieveAll(context.Context, string, uint64, uint64, string, map[string]interface{}) (ThingsPage, error)
 
 	// RetrieveByChannel retrieves the subset of things owned by the specified
 	// user and connected to specified channel.

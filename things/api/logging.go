@@ -82,7 +82,7 @@ func (lm *loggingMiddleware) ViewThing(ctx context.Context, token, id string) (t
 	return lm.svc.ViewThing(ctx, token, id)
 }
 
-func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata interface{}) (_ things.ThingsPage, err error) {
+func (lm *loggingMiddleware) ListThings(ctx context.Context, token string, offset, limit uint64, name string, metadata map[string]interface{}) (_ things.ThingsPage, err error) {
 	defer func(begin time.Time) {
 		nlog := ""
 		if name != "" {
