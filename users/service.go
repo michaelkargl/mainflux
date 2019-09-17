@@ -45,6 +45,9 @@ type Service interface {
 	// is returned. If token is invalid, or invocation failed for some
 	// other reason, non-nil error values are returned in response.
 	Identify(string) (string, error)
+
+	// Get authenticated user info for the given token.
+	UserInfo(ctx context.Context, token string) (UserInfo, error)
 }
 
 var _ Service = (*usersService)(nil)
@@ -89,4 +92,19 @@ func (svc usersService) Identify(token string) (string, error) {
 		return "", ErrUnauthorizedAccess
 	}
 	return id, nil
+}
+
+func (svc usersService) UserInfo(ctx context.Context, token string) (UserInfo, error) {
+
+	id, err := svc.idp.Identity(token)
+	if err != nil {
+		return UserInfo{}, ErrUnauthorizedAccess
+	}
+
+	dbUser, err := svc.users.RetrieveByID(ctx, id)
+	if err != nil {
+		return UserInfo{}, ErrUnauthorizedAccess
+	}
+
+	return UserInfo{id, dbUser.Metadata}, nil
 }

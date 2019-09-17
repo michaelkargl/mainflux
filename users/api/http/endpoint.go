@@ -29,22 +29,18 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 
 func userInfoEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userReq)
+		req := request.(viewUserInfo)
 
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		id, err := svc.Identify(req.token)
-		if err != nil {
-			return identityRes{}, err
-		}
-		token, err := svc.Login(ctx, req.user)
+		u, err := svc.UserInfo(ctx, req.token)
 		if err != nil {
 			return nil, err
 		}
 
-		return tokenRes{token}, nil
+		return identityRes{u.Email, u.Metadata}, nil
 	}
 }
 

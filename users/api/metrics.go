@@ -59,3 +59,12 @@ func (ms *metricsMiddleware) Identify(key string) (string, error) {
 
 	return ms.svc.Identify(key)
 }
+
+func (ms *metricsMiddleware) UserInfo(ctx context.Context, key string) (users.UserInfo, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "identity").Add(1)
+		ms.latency.With("method", "identity").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UserInfo(ctx, key)
+}
