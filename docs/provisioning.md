@@ -107,7 +107,6 @@ group of things. When specifiying metadata you can specify just a part of the me
 curl -s -S -i --cacert docker/ssl/certs/mainflux-server.crt --insecure -H "Authorization: <user_auth_token>" https://localhost/things?offset=0&limit=5&metadata={"serial":"123456"}
 ```
 
-
 If you don't provide them, default values will be used instead: 0 for `offset`,
 and 10 for `limit`. Note that `limit` cannot be set to values greater than 100. Providing
 invalid values will be considered malformed request.
