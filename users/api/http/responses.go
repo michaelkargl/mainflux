@@ -21,6 +21,10 @@ const MailSent = "Mail with reset link is sent"
 type tokenRes struct {
 	Token string `json:"token,omitempty"`
 }
+type identityRes struct {
+	Email    string                 `json:"email"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
 
 type userInfo struct {
 	Email    string                 `json:"email"`
