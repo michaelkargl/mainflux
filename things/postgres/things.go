@@ -174,7 +174,6 @@ func (tr thingRepository) RetrieveByKey(_ context.Context, key string) (string, 
 func (tr thingRepository) RetrieveAll(_ context.Context, owner string, offset, limit uint64, name string, metadata things.ThingMetadata) (things.ThingsPage, error) {
 	name = strings.ToLower(name)
 	nq := ""
-	var m []byte
 	if name != "" {
 		name = fmt.Sprintf(`%%%s%%`, name)
 		nq = `AND LOWER(name) LIKE :name`
