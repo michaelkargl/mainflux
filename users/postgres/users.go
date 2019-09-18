@@ -116,21 +116,31 @@ func (m dbMetadata) Value() (driver.Value, error) {
 type dbUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Metadata map[string]interface{}
+	Metadata string `db:"metadata"`
 }
 
 func toDBUser(u users.User) dbUser {
+	data, err := json.Marshal(u.Metadata)
+	if err != nil {
+		return dbUser{}
+	}
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
-		Metadata: u.Metadata,
+		Metadata: string(data),
 	}
 }
 
 func toUser(dbu dbUser) users.User {
+
+	var metadata map[string]interface{}
+	if err := json.Unmarshal([]byte(dbu.Metadata), &metadata); err != nil {
+		return users.User{}
+	}
+
 	return users.User{
 		Email:    dbu.Email,
 		Password: dbu.Password,
-		Metadata: dbu.Metadata,
+		Metadata: metadata,
 	}
 }
