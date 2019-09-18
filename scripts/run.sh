@@ -69,6 +69,7 @@ cd ..
 MF_MQTT_ADAPTER_LOG_LEVEL=info MF_THINGS_URL=localhost:8183 node mqtt/aedes/mqtt.js &
 cd -
 
+
 ###
 # CoAP
 ###
