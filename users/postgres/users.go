@@ -35,7 +35,11 @@ func New(db *sqlx.DB) users.UserRepository {
 func (ur userRepository) Save(_ context.Context, user users.User) error {
 	q := `INSERT INTO users (email, password, metadata) VALUES (:email, :password, :metadata)`
 
-	dbu := toDBUser(user)
+	dbu, err := toDBUser(user)
+	if err != nil {
+		return users.ErrMalformedEntity
+	}
+
 	if _, err := ur.db.NamedExec(q, dbu); err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && errDuplicate == pqErr.Code.Name() {
 			return users.ErrConflict
@@ -67,24 +71,24 @@ func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.Us
 type dbUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Metadata string `json:"metadata",omitempty`
+	Metadata []byte `json:"metadata",omitempty`
 }
 
-func toDBUser(u users.User) dbUser {
-	m := "{}"
+func toDBUser(u users.User) (dbUser, error) {
+	m := []byte("{}")
 	if len(u.Metadata) > 0 {
 		data, err := json.Marshal(u.Metadata)
 		if err != nil {
-			return dbUser{}
+			return dbUser{}, err
 		}
-		m = string(data)
+		m = data
 	}
 
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
 		Metadata: m,
-	}
+	}, nil
 }
 
 func toUser(dbu dbUser) users.User {
