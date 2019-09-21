@@ -71,7 +71,7 @@ func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.Us
 type dbUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Metadata []byte `json:"metadata",omitempty`
+	Metadata []byte `json:"metadata,omitempty"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {

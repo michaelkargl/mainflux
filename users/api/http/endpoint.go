@@ -29,7 +29,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 
 func userInfoEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(viewUserInfo)
+		req := request.(viewUserInfoReq)
 
 		if err := req.validate(); err != nil {
 			return nil, err

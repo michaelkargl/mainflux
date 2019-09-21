@@ -71,7 +71,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 }
 
 func decodeViewInfo(_ context.Context, r *http.Request) (interface{}, error) {
-	req := viewUserInfo{
+	req := viewUserInfoReq{
 		token: r.Header.Get("Authorization"),
 	}
 	return req, nil

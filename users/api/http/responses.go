@@ -18,12 +18,8 @@ var _ mainflux.Response = (*tokenRes)(nil)
 type tokenRes struct {
 	Token string `json:"token,omitempty"`
 }
-type identityRes struct {
-	Email    string                 `json:"email"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
 
-type userInfo struct {
+type identityRes struct {
 	Email    string                 `json:"email"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

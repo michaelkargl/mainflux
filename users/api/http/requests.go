@@ -19,15 +19,15 @@ type userReq struct {
 	user users.User
 }
 
-type viewUserInfo struct {
-	token string
-}
-
 func (req userReq) validate() error {
 	return req.user.Validate()
 }
 
-func (req viewUserInfo) validate() error {
+type viewUserInfoReq struct {
+	token string
+}
+
+func (req viewUserInfoReq) validate() error {
 	if req.token == "" {
 		return users.ErrUnauthorizedAccess
 	}

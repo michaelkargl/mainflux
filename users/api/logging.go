@@ -70,7 +70,7 @@ func (lm *loggingMiddleware) Identify(key string) (id string, err error) {
 
 func (lm *loggingMiddleware) UserInfo(ctx context.Context, key string) (u users.UserInfo, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get user info for client %s took %s to complete", u.Email, time.Since(begin))
+		message := fmt.Sprintf("Method user_info for client %s took %s to complete", u.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
