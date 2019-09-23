@@ -36,7 +36,7 @@ type identityRes struct {
 }
 
 func (res identityRes) Code() int {
-	return http.StatusCreated
+	return http.StatusOK
 }
 
 func (res identityRes) Headers() map[string]string {
@@ -44,7 +44,7 @@ func (res identityRes) Headers() map[string]string {
 }
 
 func (res identityRes) Empty() bool {
-	return res.Email == "" && len(res.Metadata) == 0
+	return false
 }
 
 type identityRes struct {
