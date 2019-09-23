@@ -106,5 +106,9 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 		return User{}, ErrUnauthorizedAccess
 	}
 
-	return User{id, "", dbUser.Metadata}, nil
+	return User{
+		Email:    id,
+		Password: "",
+		Metadata: dbUser.Metadata,
+	}, nil
 }
