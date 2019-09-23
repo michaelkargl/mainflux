@@ -68,7 +68,7 @@ func (lm *loggingMiddleware) Identify(key string) (id string, err error) {
 	return lm.svc.Identify(key)
 }
 
-func (lm *loggingMiddleware) UserInfo(ctx context.Context, key string) (u users.UserInfo, err error) {
+func (lm *loggingMiddleware) UserInfo(ctx context.Context, key string) (u users.User, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method user_info for client %s took %s to complete", u.Email, time.Since(begin))
 		if err != nil {

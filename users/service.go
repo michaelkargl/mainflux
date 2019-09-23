@@ -47,7 +47,7 @@ type Service interface {
 	Identify(string) (string, error)
 
 	// Get authenticated user info for the given token.
-	UserInfo(ctx context.Context, token string) (UserInfo, error)
+	UserInfo(ctx context.Context, token string) (User, error)
 }
 
 var _ Service = (*usersService)(nil)
@@ -94,17 +94,17 @@ func (svc usersService) Identify(token string) (string, error) {
 	return id, nil
 }
 
-func (svc usersService) UserInfo(ctx context.Context, token string) (UserInfo, error) {
+func (svc usersService) UserInfo(ctx context.Context, token string) (User, error) {
 
 	id, err := svc.idp.Identity(token)
 	if err != nil {
-		return UserInfo{}, ErrUnauthorizedAccess
+		return User{}, ErrUnauthorizedAccess
 	}
 
 	dbUser, err := svc.users.RetrieveByID(ctx, id)
 	if err != nil {
-		return UserInfo{}, ErrUnauthorizedAccess
+		return User{}, ErrUnauthorizedAccess
 	}
 
-	return UserInfo{id, dbUser.Metadata}, nil
+	return User{id, "", dbUser.Metadata}, nil
 }
