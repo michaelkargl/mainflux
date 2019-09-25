@@ -28,6 +28,7 @@ import (
 	httpapi "github.com/mainflux/mainflux/users/api/http"
 	"github.com/mainflux/mainflux/users/bcrypt"
 	"github.com/mainflux/mainflux/users/jwt"
+	"github.com/mainflux/mainflux/users/mail"
 	"github.com/mainflux/mainflux/users/postgres"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -53,37 +54,22 @@ const (
 	defServerKey     = ""
 	defJaegerURL     = ""
 
-	defMailDriver      = "smtp"
-	defMailHost        = "localhost"
-	defMailPort        = "25"
-	defMailUsername    = "root"
-	defMailPassword    = ""
-	defMailFromAddress = ""
-	defMailFromName    = ""
-
-	envLogLevel        = "MF_USERS_LOG_LEVEL"
-	envDBHost          = "MF_USERS_DB_HOST"
-	envDBPort          = "MF_USERS_DB_PORT"
-	envDBUser          = "MF_USERS_DB_USER"
-	envDBPass          = "MF_USERS_DB_PASS"
-	envDBName          = "MF_USERS_DB"
-	envDBSSLMode       = "MF_USERS_DB_SSL_MODE"
-	envDBSSLCert       = "MF_USERS_DB_SSL_CERT"
-	envDBSSLKey        = "MF_USERS_DB_SSL_KEY"
-	envDBSSLRootCert   = "MF_USERS_DB_SSL_ROOT_CERT"
-	envHTTPPort        = "MF_USERS_HTTP_PORT"
-	envGRPCPort        = "MF_USERS_GRPC_PORT"
-	envSecret          = "MF_USERS_SECRET"
-	envServerCert      = "MF_USERS_SERVER_CERT"
-	envServerKey       = "MF_USERS_SERVER_KEY"
-	envJaegerURL       = "MF_JAEGER_URL"
-	envMailDriver      = "MF_USERS_MAIL_DRIVER"
-	envMailHost        = "MF_USERS_MAIL_HOST"
-	envMailPort        = "MF_USERS_MAIL_PORT"
-	envMailUsername    = "MF_USERS_MAIL_USERNAME"
-	envMailPassword    = "MF_USERS_MAIL_PASSWORD"
-	envMailFromAddress = "MF_USERS_MAIL_FROM_ADDRESS"
-	envMailFromName    = "MF_USERS_MAIL_FROM_NAME"
+	envLogLevel      = "MF_USERS_LOG_LEVEL"
+	envDBHost        = "MF_USERS_DB_HOST"
+	envDBPort        = "MF_USERS_DB_PORT"
+	envDBUser        = "MF_USERS_DB_USER"
+	envDBPass        = "MF_USERS_DB_PASS"
+	envDBName        = "MF_USERS_DB"
+	envDBSSLMode     = "MF_USERS_DB_SSL_MODE"
+	envDBSSLCert     = "MF_USERS_DB_SSL_CERT"
+	envDBSSLKey      = "MF_USERS_DB_SSL_KEY"
+	envDBSSLRootCert = "MF_USERS_DB_SSL_ROOT_CERT"
+	envHTTPPort      = "MF_USERS_HTTP_PORT"
+	envGRPCPort      = "MF_USERS_GRPC_PORT"
+	envSecret        = "MF_USERS_SECRET"
+	envServerCert    = "MF_USERS_SERVER_CERT"
+	envServerKey     = "MF_USERS_SERVER_KEY"
+	envJaegerURL     = "MF_JAEGER_URL"
 )
 
 type config struct {
@@ -95,19 +81,15 @@ type config struct {
 	serverCert string
 	serverKey  string
 	jaegerURL  string
-	mail       mailconf
 }
 
-type mailconf struct {
-	mailDriver      string
-	mailHost        string
-	mailPort        string
-	mailUsername    string
-	mailPassword    string
-	mailFromAddress string
-	mailFromName    string
+func getPasswordResetMessage() []byte {
+	msg := []byte("To: recipient@example.net\r\n" +
+		"Subject: discount Gophers!\r\n" +
+		"\r\n" +
+		"This is the email body.\r\n")
+	return msg
 }
-
 func main() {
 	cfg := loadConfig()
 
@@ -115,7 +97,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-
+	mail.Send([]string{"mirko.teodorovic.gmail.com"}, getPasswordResetMessage())
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
@@ -152,10 +134,6 @@ func loadConfig() config {
 		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
 		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
-	}
-
-	mconf := mailconf{
-		mailDriver: mainflux.Env(envMailDriver, defMailDriver),
 	}
 
 	return config{
