@@ -330,17 +330,13 @@ type dbThing struct {
 	Owner    string `db:"owner"`
 	Name     string `db:"name"`
 	Key      string `db:"key"`
-	Metadata []byte `db:"metadata"`
+	Metadata string `db:"metadata"`
 }
 
 func toDBThing(th things.Thing) (dbThing, error) {
-	data := []byte("{}")
-	if len(th.Metadata) > 0 {
-		b, err := json.Marshal(th.Metadata)
-		if err != nil {
-			return dbThing{}, err
-		}
-		data = b
+	data, err := json.Marshal(th.Metadata)
+	if err != nil {
+		return dbThing{}, err
 	}
 
 	return dbThing{
@@ -348,7 +344,7 @@ func toDBThing(th things.Thing) (dbThing, error) {
 		Owner:    th.Owner,
 		Name:     th.Name,
 		Key:      th.Key,
-		Metadata: data,
+		Metadata: string(data),
 	}, nil
 }
 
