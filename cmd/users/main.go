@@ -53,22 +53,37 @@ const (
 	defServerKey     = ""
 	defJaegerURL     = ""
 
-	envLogLevel      = "MF_USERS_LOG_LEVEL"
-	envDBHost        = "MF_USERS_DB_HOST"
-	envDBPort        = "MF_USERS_DB_PORT"
-	envDBUser        = "MF_USERS_DB_USER"
-	envDBPass        = "MF_USERS_DB_PASS"
-	envDBName        = "MF_USERS_DB"
-	envDBSSLMode     = "MF_USERS_DB_SSL_MODE"
-	envDBSSLCert     = "MF_USERS_DB_SSL_CERT"
-	envDBSSLKey      = "MF_USERS_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_USERS_DB_SSL_ROOT_CERT"
-	envHTTPPort      = "MF_USERS_HTTP_PORT"
-	envGRPCPort      = "MF_USERS_GRPC_PORT"
-	envSecret        = "MF_USERS_SECRET"
-	envServerCert    = "MF_USERS_SERVER_CERT"
-	envServerKey     = "MF_USERS_SERVER_KEY"
-	envJaegerURL     = "MF_JAEGER_URL"
+	defMailDriver      = "smtp"
+	defMailHost        = "localhost"
+	defMailPort        = "25"
+	defMailUsername    = "root"
+	defMailPassword    = ""
+	defMailFromAddress = ""
+	defMailFromName    = ""
+
+	envLogLevel        = "MF_USERS_LOG_LEVEL"
+	envDBHost          = "MF_USERS_DB_HOST"
+	envDBPort          = "MF_USERS_DB_PORT"
+	envDBUser          = "MF_USERS_DB_USER"
+	envDBPass          = "MF_USERS_DB_PASS"
+	envDBName          = "MF_USERS_DB"
+	envDBSSLMode       = "MF_USERS_DB_SSL_MODE"
+	envDBSSLCert       = "MF_USERS_DB_SSL_CERT"
+	envDBSSLKey        = "MF_USERS_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_USERS_DB_SSL_ROOT_CERT"
+	envHTTPPort        = "MF_USERS_HTTP_PORT"
+	envGRPCPort        = "MF_USERS_GRPC_PORT"
+	envSecret          = "MF_USERS_SECRET"
+	envServerCert      = "MF_USERS_SERVER_CERT"
+	envServerKey       = "MF_USERS_SERVER_KEY"
+	envJaegerURL       = "MF_JAEGER_URL"
+	envMailDriver      = "MF_USERS_MAIL_DRIVER"
+	envMailHost        = "MF_USERS_MAIL_HOST"
+	envMailPort        = "MF_USERS_MAIL_PORT"
+	envMailUsername    = "MF_USERS_MAIL_USERNAME"
+	envMailPassword    = "MF_USERS_MAIL_PASSWORD"
+	envMailFromAddress = "MF_USERS_MAIL_FROM_ADDRESS"
+	envMailFromName    = "MF_USERS_MAIL_FROM_NAME"
 )
 
 type config struct {
@@ -80,6 +95,17 @@ type config struct {
 	serverCert string
 	serverKey  string
 	jaegerURL  string
+	mail       mailconf
+}
+
+type mailconf struct {
+	mailDriver      string
+	mailHost        string
+	mailPort        string
+	mailUsername    string
+	mailPassword    string
+	mailFromAddress string
+	mailFromName    string
 }
 
 func main() {
@@ -128,6 +154,10 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	mconf := mailconf{
+		mailDriver: mainflux.Env(envMailDriver, defMailDriver),
+	}
+
 	return config{
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:   dbConfig,
@@ -137,6 +167,7 @@ func loadConfig() config {
 		serverCert: mainflux.Env(envServerCert, defServerCert),
 		serverKey:  mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:  mainflux.Env(envJaegerURL, defJaegerURL),
+		mailconf:   mconf,
 	}
 }
 
