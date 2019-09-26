@@ -10,7 +10,9 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 
@@ -68,22 +70,52 @@ func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.Us
 	return user, nil
 }
 
+// DbMetadata type for handling metada properly in database/sql
+type DbMetadata map[string]interface{}
+
+// Scan - Implement the database/sql scanner interface
+func (m *DbMetadata) Scan(value interface{}) error {
+	// if value is nil, return empty
+	if value == nil {
+		m = new(DbMetadata)
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		m = new(DbMetadata)
+		return errors.New("Failed to scan metadata")
+	}
+
+	if err := json.Unmarshal(b, m); err != nil {
+		m = new(DbMetadata)
+		return err
+	}
+
+	return nil
+}
+
+// Value Implements valuer
+func (m DbMetadata) Value() (driver.Value, error) {
+	if len(m) == 0 {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return b, err
+}
+
 type dbUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Metadata []byte `json:"metadata,omitempty"`
+	Metadata DbMetadata
 }
 
 func toDBUser(u users.User) (dbUser, error) {
-	m := []byte("{}")
-	if len(u.Metadata) > 0 {
-		data, err := json.Marshal(u.Metadata)
-		if err != nil {
-			return dbUser{}, err
-		}
-		m = data
-	}
-
+	m := u.Metadata
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
@@ -93,14 +125,9 @@ func toDBUser(u users.User) (dbUser, error) {
 
 func toUser(dbu dbUser) users.User {
 
-	var metadata map[string]interface{}
-	if err := json.Unmarshal([]byte(dbu.Metadata), &metadata); err != nil {
-		return users.User{}
-	}
-
 	return users.User{
 		Email:    dbu.Email,
 		Password: dbu.Password,
-		Metadata: metadata,
+		Metadata: dbu.Metadata,
 	}
 }
