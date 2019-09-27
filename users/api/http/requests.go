@@ -66,3 +66,14 @@ func (req resetTokenReq) validate() error {
 	}
 	return nil
 }
+
+type passResReq struct {
+	token string
+}
+
+func (req viewUserInfoReq) validate() error {
+	if req.token == "" {
+		return users.ErrUnauthorizedAccess
+	}
+	return nil
+}
