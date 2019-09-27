@@ -96,7 +96,7 @@ func passwordUpdateEndpoint(svc users.Service) endpoint.Endpoint {
 
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-
+		req := request.(passResReq)
 		// TO DO
 		// This endpoint will initiate the reset procedure
 		// it will prepare and send a link for reset to the users email
