@@ -95,7 +95,6 @@ func (svc usersService) Identify(token string) (string, error) {
 }
 
 func (svc usersService) UserInfo(ctx context.Context, token string) (User, error) {
-
 	id, err := svc.idp.Identity(token)
 	if err != nil {
 		return User{}, ErrUnauthorizedAccess

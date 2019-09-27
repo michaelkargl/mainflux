@@ -70,25 +70,24 @@ func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.Us
 	return user, nil
 }
 
-// DbMetadata type for handling metada properly in database/sql
-type DbMetadata map[string]interface{}
+type dbMetadata map[string]interface{}
 
 // Scan - Implement the database/sql scanner interface
-func (m *DbMetadata) Scan(value interface{}) error {
+func (m *dbMetadata) Scan(value interface{}) error {
 	// if value is nil, return empty
 	if value == nil {
-		m = new(DbMetadata)
+		m = nil
 		return nil
 	}
 
 	b, ok := value.([]byte)
 	if !ok {
-		m = new(DbMetadata)
+		m = &dbMetadata{}
 		return errors.New("Failed to scan metadata")
 	}
 
 	if err := json.Unmarshal(b, m); err != nil {
-		m = new(DbMetadata)
+		m = &dbMetadata{}
 		return err
 	}
 
@@ -96,7 +95,7 @@ func (m *DbMetadata) Scan(value interface{}) error {
 }
 
 // Value Implements valuer
-func (m DbMetadata) Value() (driver.Value, error) {
+func (m dbMetadata) Value() (driver.Value, error) {
 	if len(m) == 0 {
 		return nil, nil
 	}
@@ -109,22 +108,20 @@ func (m DbMetadata) Value() (driver.Value, error) {
 }
 
 type dbUser struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Metadata DbMetadata
+	Email    string     `db:"email"`
+	Password string     `db:"password"`
+	Metadata dbMetadata `db:"metadata"`
 }
 
 func toDBUser(u users.User) (dbUser, error) {
-	m := u.Metadata
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
-		Metadata: m,
+		Metadata: u.Metadata,
 	}, nil
 }
 
 func toUser(dbu dbUser) users.User {
-
 	return users.User{
 		Email:    dbu.Email,
 		Password: dbu.Password,
