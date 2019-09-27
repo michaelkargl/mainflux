@@ -37,10 +37,7 @@ func New(db *sqlx.DB) users.UserRepository {
 func (ur userRepository) Save(_ context.Context, user users.User) error {
 	q := `INSERT INTO users (email, password, metadata) VALUES (:email, :password, :metadata)`
 
-	dbu, err := toDBUser(user)
-	if err != nil {
-		return users.ErrMalformedEntity
-	}
+	dbu := toDBUser(user)
 
 	if _, err := ur.db.NamedExec(q, dbu); err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && errDuplicate == pqErr.Code.Name() {
@@ -70,6 +67,7 @@ func (ur userRepository) RetrieveByID(_ context.Context, email string) (users.Us
 	return user, nil
 }
 
+// dbMetadata type for handling metadata properly in database/sql
 type dbMetadata map[string]interface{}
 
 // Scan - Implement the database/sql scanner interface
@@ -83,6 +81,8 @@ func (m *dbMetadata) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
 		m = &dbMetadata{}
+
+		return users.ErrScanMetadata
 		return errors.New("Failed to scan metadata")
 	}
 
@@ -113,12 +113,12 @@ type dbUser struct {
 	Metadata dbMetadata `db:"metadata"`
 }
 
-func toDBUser(u users.User) (dbUser, error) {
+func toDBUser(u users.User) dbUser {
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
 		Metadata: u.Metadata,
-	}, nil
+	}
 }
 
 func toUser(dbu dbUser) users.User {

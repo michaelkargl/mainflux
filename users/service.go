@@ -27,6 +27,9 @@ var (
 
 	// ErrNotFound indicates a non-existent entity request.
 	ErrNotFound = errors.New("non-existent entity")
+
+	// ErrScanMetadata indicates problem with metadata in db
+	ErrScanMetadata = errors.New("Failed to scan metadata")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
