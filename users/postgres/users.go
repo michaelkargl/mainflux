@@ -12,7 +12,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 
 	"github.com/jmoiron/sqlx"
 
@@ -72,7 +71,6 @@ type dbMetadata map[string]interface{}
 
 // Scan - Implement the database/sql scanner interface
 func (m *dbMetadata) Scan(value interface{}) error {
-	// if value is nil, return empty
 	if value == nil {
 		m = nil
 		return nil
@@ -81,9 +79,7 @@ func (m *dbMetadata) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
 		m = &dbMetadata{}
-
 		return users.ErrScanMetadata
-		return errors.New("Failed to scan metadata")
 	}
 
 	if err := json.Unmarshal(b, m); err != nil {
