@@ -26,6 +26,9 @@ var (
 
 	// ErrScanMetadata indicates problem with metadata in db
 	ErrScanMetadata = errors.New("Failed to scan metadata")
+
+	// ErrMissingEmail indicates missing email for password reset request.
+	ErrMissingEmail = errors.New("missing email for password reset")
 )
 
 // Service specifies an API that must be fullfiled by the domain service

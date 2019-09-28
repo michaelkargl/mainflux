@@ -61,6 +61,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.
 	return user, nil
 }
 
+<<<<<<< HEAD
 // dbMetadata type for handling metadata properly in database/sql
 type dbMetadata map[string]interface{}
 
@@ -79,12 +80,37 @@ func (m *dbMetadata) Scan(value interface{}) error {
 
 	if err := json.Unmarshal(b, m); err != nil {
 		m = &dbMetadata{}
+=======
+func (ur userRepository) SaveToken(_ context.Context, email, token string) error {
+	t, err := ur.retrieveTokenByID(email)
+	if err != nil {
+		return err
+	}
+	q := `INSERT INTO tokens (user_id, token) VALUES (:email, :token )`
+	if len(t) > 0 {
+		q = `UPDATE tokens SET ( token) VALUES :token  WHERE user_id = :email`
+	}
+
+	db := struct {
+		Email string
+		Token string
+	}{
+		email,
+		token,
+	}
+
+	if _, err := ur.db.NamedExec(q, db); err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && errDuplicate == pqErr.Code.Name() {
+			return users.ErrConflict
+		}
+>>>>>>> add token
 		return err
 	}
 
 	return nil
 }
 
+<<<<<<< HEAD
 // Value Implements valuer
 func (m dbMetadata) Value() (driver.Value, error) {
 	if len(m) == 0 {
@@ -96,6 +122,38 @@ func (m dbMetadata) Value() (driver.Value, error) {
 		return nil, err
 	}
 	return b, err
+=======
+func (ur userRepository) RetrieveToken(_ context.Context, email string) (string, error) {
+	return ur.retrieveTokenByID(email)
+}
+
+func (ur userRepository) DeleteToken(email string) (string, error) {
+	q := `SELECT token from tokens WHERE email = $1`
+
+	t := ""
+	if err := ur.db.QueryRowx(q, email).StructScan(&t); err != nil {
+		if err == sql.ErrNoRows {
+			return t, users.ErrNotFound
+		}
+		return t, err
+	}
+
+	return t, nil
+}
+
+func (ur userRepository) retrieveTokenByID(email string) (string, error) {
+	q := `SELECT token from tokens WHERE email = $1`
+
+	t := ""
+	if err := ur.db.QueryRowx(q, email).StructScan(&t); err != nil {
+		if err == sql.ErrNoRows {
+			return t, users.ErrNotFound
+		}
+		return t, err
+	}
+
+	return t, nil
+>>>>>>> add token
 }
 
 type dbUser struct {
