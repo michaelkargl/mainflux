@@ -43,20 +43,6 @@ func (ur userRepository) Save(ctx context.Context, user users.User) error {
 	return nil
 }
 
-func (ur userRepository) Update(ctx context.Context, user users.User) error {
-	q := `UPDATE users SET(email, password, metadata) VALUES (:email, :password, :metadata) WHERE email = :email`
-
-	dbu := toDBUser(user)
-	if _, err := ur.db.NamedExecContext(ctx, q, dbu); err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && errDuplicate == pqErr.Code.Name() {
-			return users.ErrConflict
-		}
-		return err
-	}
-
-	return nil
-}
-
 func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.User, error) {
 	q := `SELECT password, metadata FROM users WHERE email = $1`
 
@@ -128,38 +114,23 @@ func (m dbMetadata) Value() (driver.Value, error) {
 }
 
 type dbUser struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Metadata []byte `json:"metadata,omitempty"`
+	Email    string     `db:"email"`
+	Password string     `db:"password"`
+	Metadata dbMetadata `db:"metadata"`
 }
 
-func toDBUser(u users.User) (dbUser, error) {
-	m := []byte("{}")
-	if len(u.Metadata) > 0 {
-		data, err := json.Marshal(u.Metadata)
-		if err != nil {
-			return dbUser{}, err
-		}
-		m = data
-	}
-
+func toDBUser(u users.User) dbUser {
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
-		Metadata: m,
-	}, nil
+		Metadata: u.Metadata,
+	}
 }
 
 func toUser(dbu dbUser) users.User {
-
-	var metadata map[string]interface{}
-	if err := json.Unmarshal([]byte(dbu.Metadata), &metadata); err != nil {
-		return users.User{}
-	}
-
 	return users.User{
 		Email:    dbu.Email,
 		Password: dbu.Password,
-		Metadata: metadata,
+		Metadata: dbu.Metadata,
 	}
 }

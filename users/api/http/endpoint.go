@@ -74,62 +74,6 @@ func passwordResetPutEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func userUpdateEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userReq)
-
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		// TO DO
-		// u, err := svc.UserInfo(ctx, req.token)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// change this return value
-		return identityRes{"", map[string]interface{}{}}, nil
-	}
-}
-
-func passwordUpdateEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-
-		// req : = request.(passwordChange)
-
-		// TO DO
-
-		return identityRes{"", map[string]interface{}{}}, nil
-	}
-}
-
-func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(passResReq)
-		// TO DO
-		// This endpoint will initiate the reset procedure
-		// it will prepare and send a link for reset to the users email
-
-		return nil, nil
-
-	}
-}
-
-func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-
-		// TO DO
-		// this endpoint will actually change password after user has followed
-		// password reset link. Password reset link will take user to the page
-		// with form to enter the new password, when submited request will contain
-		// new password along with token from the password reset link
-		//
-
-		return nil, nil
-	}
-}
-
 func userInfoEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(viewUserInfoReq)
