@@ -33,25 +33,8 @@ var (
 	// ErrScanMetadata indicates problem with metadata in db
 	ErrScanMetadata = errors.New("Failed to scan metadata")
 
-	// ErrMissingEmail indicates missing email for password reset request
+	// ErrMissingEmail indicates missing email for password reset request.
 	ErrMissingEmail = errors.New("missing email for password reset")
-
-	// ErrSavingRecoveryToken indicates error saving recovery token
-	ErrSavingRecoveryToken = errors.New("error saving recovery token")
-
-	// ErrDeletingRecoveryToken indicates error deleting recovery token
-	ErrDeletingRecoveryToken = errors.New("error deleting recovery token")
-
-	// ErrRetrievingRecoveryToken indicates error deleting recovery token
-	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
-
-	// ErrMisingResetToken indicates malformed or missing reset token
-	// for reseting password
-	ErrMisingResetToken = errors.New("error mising reset token")
-
-	// ErrGeneratingResetToken indicates error in generating password recovery
-	// token
-	ErrGeneratingResetToken = errors.New("error mising reset token")
 )
 
 // Service specifies an API that must be fullfiled by the domain service

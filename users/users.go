@@ -22,6 +22,7 @@ type User struct {
 	Password string
 	Metadata map[string]interface{}
 }
+
 // Validate returns an error if user representation is invalid.
 func (u User) Validate() error {
 	if u.Email == "" || u.Password == "" {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/users"
+	"github.com/mainflux/mainflux/users/pwdrecovery"
 )
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
@@ -97,6 +98,31 @@ func passwordUpdateEndpoint(svc users.Service) endpoint.Endpoint {
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passResReq)
+		email := req.user.Email
+		token := pwdrecovery.G
+
+		
+    const buffer = await crypto.randomBytes(32);
+    const passwordResetToken = buffer.toString("hex");
+    try {
+        await models.User.update(
+            {
+                passwordResetToken
+            }, {
+                where: {
+                    email
+                }
+            }
+        )
+        const passwordResetUrl = `${process.env.FRONTEND_URL}/passwordReset?passwordResetToken=${passwordResetToken}`;
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        const msg = {
+            to: email,
+            from: process.env.FROM_EMAIL,
+            subject: 'Password Reset Request',
+            text: `
+            Dear user,
+You can reset your password by going to ${passwordResetUrl}
 		// TO DO
 		// This endpoint will initiate the reset procedure
 		// it will prepare and send a link for reset to the users email

@@ -61,7 +61,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.
 	return user, nil
 }
 
-func (ur userRepository) ChangePassword(ctx context.Context, email, token, password string) error {
+func (ur userRepository) UpdatePassword(ctx context.Context, email, password string) error {
 	q := `UPDATE users SET  password = :password  WHERE email = :email`
 
 	db := dbUser{
@@ -114,38 +114,23 @@ func (m dbMetadata) Value() (driver.Value, error) {
 }
 
 type dbUser struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Metadata []byte `json:"metadata,omitempty"`
+	Email    string     `db:"email"`
+	Password string     `db:"password"`
+	Metadata dbMetadata `db:"metadata"`
 }
 
-func toDBUser(u users.User) (dbUser, error) {
-	m := []byte("{}")
-	if len(u.Metadata) > 0 {
-		data, err := json.Marshal(u.Metadata)
-		if err != nil {
-			return dbUser{}, err
-		}
-		m = data
-	}
-
+func toDBUser(u users.User) dbUser {
 	return dbUser{
 		Email:    u.Email,
 		Password: u.Password,
-		Metadata: m,
-	}, nil
+		Metadata: u.Metadata,
+	}
 }
 
 func toUser(dbu dbUser) users.User {
-
-	var metadata map[string]interface{}
-	if err := json.Unmarshal([]byte(dbu.Metadata), &metadata); err != nil {
-		return users.User{}
-	}
-
 	return users.User{
 		Email:    dbu.Email,
 		Password: dbu.Password,
-		Metadata: metadata,
+		Metadata: dbu.Metadata,
 	}
 }
