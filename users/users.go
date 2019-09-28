@@ -22,6 +22,7 @@ type User struct {
 	Password string
 	Metadata map[string]interface{}
 }
+
 // Validate returns an error if user representation is invalid.
 func (u User) Validate() error {
 	if u.Email == "" || u.Password == "" {
@@ -43,6 +44,15 @@ type UserRepository interface {
 
 	// RetrieveByID retrieves user by its unique identifier (i.e. email).
 	RetrieveByID(context.Context, string) (User, error)
+
+	// SaveToken
+	SaveToken(_ context.Context, email, token string) error
+
+	// RetrieveToken
+	RetrieveToken(_ context.Context, email string) (string, error)
+
+	// DeleteToken
+	DeleteToken(_ context.Context, email string) (string, error)
 }
 
 func isEmail(email string) bool {

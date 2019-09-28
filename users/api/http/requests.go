@@ -31,12 +31,12 @@ func (req viewUserInfoReq) validate() error {
 }
 
 type passResReq struct {
-	token string
+	user users.User
 }
 
-func (req viewUserInfoReq) validate() error {
-	if req.token == "" {
-		return users.ErrUnauthorizedAccess
+func (req passResReq) validate() error {
+	if req.user.Email == "" {
+		return users.ErrMissingEmail
 	}
 	return nil
 }
