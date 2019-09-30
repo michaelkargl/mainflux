@@ -1,7 +1,6 @@
-//Package token provides password recovery token generation with TTL
-//Token is sent by email to user as part of recovery URL
-//Token contains 32 bytes where first 4 bytes are exparation time and 28 bytes random string
-// exparation-email signed by secret signature
+// Package token provides password recovery token generation with jwt
+// Token is sent by email to user as part of recovery URL
+// Token is signed by secret signature
 package token
 
 import (
@@ -30,21 +29,24 @@ var (
 )
 
 const (
-	defTokenSecret   = "mainflux-secret"
-	defTokenDuration = "5"
-	defTokenLogLevel = "debug"
+	defTokenSecret        = "mainflux-secret"
+	defTokenDuration      = "5"
+	defTokenLogLevel      = "debug"
+	defTokenResetEndpoint = "/password/reset"
 
-	envTokenSecret   = "MF_TOKEN_SECRET"
-	envTokenDuration = "MF_TOKEN_DURATION"
-	envTokenLogLevel = "MF_TOKEN_DEBUG_LEVEL"
+	envTokenSecret        = "MF_TOKEN_SECRET"
+	envTokenDuration      = "MF_TOKEN_DURATION"
+	envTokenLogLevel      = "MF_TOKEN_DEBUG_LEVEL"
+	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
 )
 
 var once sync.Once
 
 type tokenizer struct {
-	hmacSampleSecret []byte // secret for sigining token
+	hmacSampleSecret []byte // secret for signing token
 	tokenDuration    int    //token in duration in min
 	logger           logger.Logger
+	url              string
 }
 
 var t *tokenizer
@@ -55,7 +57,7 @@ func instance() *tokenizer {
 		t = &tokenizer{}
 		t.hmacSampleSecret = []byte(mainflux.Env(envTokenSecret, defTokenSecret))
 		t.tokenDuration, _ = strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
-
+		t.url = mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint)
 		logLevel := mainflux.Env(envTokenLogLevel, defTokenLogLevel)
 		l, err := logger.New(os.Stdout, logLevel)
 		if err != nil {
@@ -75,8 +77,8 @@ func Generate(email string, offset int) (string, error) {
 }
 
 // Verify verifies token validity
-func Verify(email, tok string, hashed string) error {
-	return instance().verify(email, tok, hashed)
+func Verify(tok string) (string, error) {
+	return instance().verify(tok)
 }
 
 // SendToken sends password recovery link to user
@@ -91,7 +93,7 @@ func (t *tokenizer) generate(email string, offset int) (string, error) {
 		exp = 0
 	}
 	expires := time.Now().Add(time.Minute * time.Duration(exp))
-	nbf := time.Now().Add(time.Second * 10)
+	nbf := time.Now()
 
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain
@@ -108,8 +110,8 @@ func (t *tokenizer) generate(email string, offset int) (string, error) {
 }
 
 // Verify verifies token validity
-func (t *tokenizer) verify(email, tok string, hashed string) error {
-
+func (t *tokenizer) verify(tok string) (string, error) {
+	email := ""
 	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -121,35 +123,32 @@ func (t *tokenizer) verify(email, tok string, hashed string) error {
 		return t.hmacSampleSecret, nil
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		fmt.Println(claims["email"], claims["nbf"])
 		if claims.VerifyExpiresAt(time.Now().Unix(), false) == false {
 			t.logger.Error(ErrExpiredToken.Error())
-			return ErrExpiredToken
+			return "", ErrExpiredToken
 		}
-		if email != claims["email"] {
-			t.logger.Error("mail not matching token")
-			return ErrMalformedToken
-		}
+		email = claims["email"].(string)
+
 	} else {
-		return err
+		return email, err
 	}
-	return nil
+	return email, nil
 }
 
 // SendToken sends password recovery link to user
 func (t *tokenizer) sendToken(host, email, token string) {
-	body := buildBody(host, email, token)
+	body := t.buildBody(host, email, token)
 	mail.Send([]string{email}, body)
 }
 
 // Builds recovery email body
-func buildBody(host, email, token string) []byte {
+func (t *tokenizer) buildBody(host, email, token string) []byte {
 	msg := []byte(fmt.Sprintf("To: %s\r\n"+
 		"Subject: Reset Password!\r\n"+
 		"\r\n"+
 		"You have initiated password reset.\r\n"+
 		"Follow the link below to reset password.\r\n"+
-		"%s/passwd/reset?token=%s", email, host, token))
+		"%s%s?token=%s", email, host, t.url, token))
 
 	return msg
 }
