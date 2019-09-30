@@ -99,8 +99,17 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passResReq)
 		email := req.user.Email
-		token := token.Generate(email)
-		svc.SaveToken(ctx, email, token)
+		token, err := token.Generate(email)
+		if err != nil {
+			return nil, err
+		}
+
+		err = svc.SaveToken(ctx, email, token)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}
 }
 

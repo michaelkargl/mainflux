@@ -35,6 +35,15 @@ var (
 
 	// ErrMissingEmail indicates missing email for password reset request.
 	ErrMissingEmail = errors.New("missing email for password reset")
+
+	// ErrSavingRecoveryToken indicates error saving recovery token
+	ErrSavingRecoveryToken = errors.New("error saving recovery token")
+
+	// ErrDeletingRecoveryToken indicates error deleting recovery token
+	ErrDeletingRecoveryToken = errors.New("error deleting recovery token")
+
+	// ErrRetrievingRecoveryToken indicates error deleting recovery token
+	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -57,12 +66,23 @@ type Service interface {
 	// Get authenticated user info for the given token
 	UserInfo(ctx context.Context, token string) (User, error)
 
+<<<<<<< HEAD
 	// GenerateResetToken email where mail will be sent.
 	// host is used for generating reset link.
 	GenerateResetToken(_ context.Context, email, host string) error
 
 	// ChangePassword change users password
 	ChangePassword(_ context.Context, email, token, password string) error
+=======
+	// SaveToken
+	SaveToken(_ context.Context, email, token string) error
+
+	// RetrieveToken
+	RetrieveToken(_ context.Context, email string) (string, error)
+
+	// DeleteToken
+	DeleteToken(_ context.Context, email string) error
+>>>>>>> adding token endpoints
 }
 
 var _ Service = (*usersService)(nil)
@@ -128,6 +148,7 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 
 }
 
+<<<<<<< HEAD
 func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
 
 	user, err := svc.users.RetrieveByID(ctx, email)
@@ -163,5 +184,37 @@ func (svc usersService) ChangePassword(ctx context.Context, email, tok, password
 	}
 	err = svc.users.ChangePassword(ctx, email, tok, password)
 	return err
+=======
+func (svc usersService) SaveToken(ctx context.Context, email, token string) error {
+
+	err := svc.users.SaveToken(ctx, email, token)
+	if err != nil {
+		return ErrSavingRecoveryToken
+	}
+
+	return nil
+
+}
+
+func (svc usersService) RetrieveToken(ctx context.Context, email string) (string, error) {
+
+	token, err := svc.users.RetrieveToken(ctx, email)
+	if err != nil {
+		return "", ErrSavingRecoveryToken
+	}
+
+	return token, nil
+
+}
+
+func (svc usersService) DeleteToken(ctx context.Context, email string) error {
+
+	err := svc.users.DeleteToken(ctx, email)
+	if err != nil {
+		return ErrDeletingRecoveryToken
+	}
+
+	return nil
+>>>>>>> adding token endpoints
 
 }
