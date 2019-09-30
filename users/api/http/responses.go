@@ -3,11 +3,7 @@
 
 package http
 
-import (
-	"net/http"
-
-	"github.com/mainflux/mainflux"
-)
+import "github.com/mainflux/mainflux"
 
 var (
 	_ mainflux.Response = (*tokenRes)(nil)
@@ -23,7 +19,7 @@ type tokenRes struct {
 }
 
 func (res tokenRes) Code() int {
-	return http.StatusCreated
+	return 0
 }
 
 func (res tokenRes) Headers() map[string]string {
@@ -40,24 +36,7 @@ type identityRes struct {
 }
 
 func (res identityRes) Code() int {
-	return http.StatusOK
-}
-
-func (res identityRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res identityRes) Empty() bool {
-	return false
-}
-
-type identityRes struct {
-	Email    string                 `json:"email"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
-
-func (res identityRes) Code() int {
-	return http.StatusOK
+	return 0
 }
 
 func (res identityRes) Headers() map[string]string {
