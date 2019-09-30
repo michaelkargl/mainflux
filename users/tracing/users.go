@@ -15,6 +15,9 @@ import (
 const (
 	saveOp         = "save_op"
 	retrieveByIDOp = "retrieve_by_id"
+	saveToken      = "save_token"
+	retrieveToken  = "retrieve_token"
+	deleteToken    = "delete_token"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -47,6 +50,30 @@ func (urm userRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return urm.repo.RetrieveByID(ctx, id)
+}
+
+func (urm userRepositoryMiddleware) SaveToken(ctx context.Context, email, token string) error {
+	span := createSpan(ctx, urm.tracer, saveToken)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.SaveToken(ctx, email, token)
+}
+
+func (urm userRepositoryMiddleware) RetrieveToken(ctx context.Context, email string) (string, error) {
+	span := createSpan(ctx, urm.tracer, retrieveToken)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.RetrieveToken(ctx, email)
+}
+
+func (urm userRepositoryMiddleware) DeleteToken(ctx context.Context, email string) error {
+	span := createSpan(ctx, urm.tracer, deleteToken)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.DeleteToken(ctx, email)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {
