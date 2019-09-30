@@ -52,7 +52,7 @@ type UserRepository interface {
 	RetrieveToken(_ context.Context, email string) (string, error)
 
 	// DeleteToken
-	DeleteToken(_ context.Context, email string) (string, error)
+	DeleteToken(_ context.Context, email string) error
 }
 
 func isEmail(email string) bool {
