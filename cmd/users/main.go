@@ -28,7 +28,6 @@ import (
 	httpapi "github.com/mainflux/mainflux/users/api/http"
 	"github.com/mainflux/mainflux/users/bcrypt"
 	"github.com/mainflux/mainflux/users/jwt"
-	"github.com/mainflux/mainflux/users/mail"
 	"github.com/mainflux/mainflux/users/postgres"
 	opentracing "github.com/opentracing/opentracing-go"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
@@ -83,13 +82,6 @@ type config struct {
 	jaegerURL  string
 }
 
-func getPasswordResetMessage() []byte {
-	msg := []byte("To: recipient@example.net\r\n" +
-		"Subject: discount Gophers!\r\n" +
-		"\r\n" +
-		"This is the email body.\r\n")
-	return msg
-}
 func main() {
 	cfg := loadConfig()
 
@@ -97,7 +89,6 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	mail.Send([]string{"mirko.teodorovic.gmail.com"}, getPasswordResetMessage())
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
