@@ -53,6 +53,12 @@ type UserRepository interface {
 
 	// DeleteToken
 	DeleteToken(_ context.Context, email string) error
+
+	// GenerateResetToken
+	GenerateResetToken(_ context.Context, email string)
+
+	// ChangePassword
+	ChangePassword(_ context.Context, email, token, password string)
 }
 
 func isEmail(email string) bool {

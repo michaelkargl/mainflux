@@ -53,8 +53,15 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 		opts...,
 	))
 
+	mux.Post("/passwd/res-req", kithttp.NewServer(
+		kitot.TraceServer(tracer, "res-req")(passwordResetRequestEndpoint(svc)),
+		decodePasswordReset,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Post("/passwd/reset", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register")(passwordResetRequestEndpoint(svc)),
+		kitot.TraceServer(tracer, "reset")(passwordResetRequestEndpoint(svc)),
 		decodeCredentials,
 		encodeResponse,
 		opts...,
@@ -100,6 +107,21 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 	}
 
 	return userReq{user}, nil
+}
+
+func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		logger.Warn("Invalid or missing content type.")
+		return nil, errUnsupportedContentType
+	}
+
+	var user users.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		logger.Warn(fmt.Sprintf("Failed to decode user credentials: %s", err))
+		return nil, err
+	}
+
+	return passResReq{user}, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {

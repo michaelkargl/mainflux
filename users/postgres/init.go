@@ -55,7 +55,7 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE TABLE IF NOT EXISTS tokens (
 						user_id    VARCHAR(254),
 						token	 VARCHAR(254),
-						FOREIGN KEY (user_id) REFERENCES users (email) ON DELETE CASCADE ON UPDATE CASCADE,
+						FOREIGN KEY (user_id) REFERENCES users (email) ON DELETE CASCADE ON UPDATE CASCADE
 					)`,
 				},
 				Down: []string{"DROP TABLE users"},

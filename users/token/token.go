@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mainflux/mainflux/users/mail"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -85,16 +86,22 @@ func Hash(token string) (string, error) {
 	return string(hash), nil
 }
 
-// SendRecovery sends password recovery link to user
-func Send(email, token string) error {
-	url := builURL(token)
-	fmt.Println("This is a recovery URL which I need to send", url, "On email", email)
-	return nil
+// SendToken sends password recovery link to user
+func SendToken(email, token string) {
+	body := buildBody(email, token)
+	mail.Send([]string{email}, body)
 }
 
-// Builds recovery URL
-func builURL(t string) string {
-	return fmt.Sprintf("%s/password/recovery/token=%s", domain, t)
+// Builds recovery email body
+func buildBody(email, token string) []byte {
+	msg := []byte(fmt.Sprintf("To: %s\r\n"+
+		"Subject: Reset Password!\r\n"+
+		"\r\n"+
+		"You have initiated password reset.\r\n"+
+		"Follow the link below to reset password.\r\n"+
+		"/passwd/reset?token=%s", email, token))
+
+	return msg
 }
 
 // Hashing token with signature
