@@ -6,7 +6,6 @@ package users
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/mainflux/mainflux/users/token"
 )
@@ -33,7 +32,7 @@ var (
 	// ErrScanMetadata indicates problem with metadata in db
 	ErrScanMetadata = errors.New("Failed to scan metadata")
 
-	// ErrMissingEmail indicates missing email for password reset request.
+	// ErrMissingEmail indicates missing email for password reset request
 	ErrMissingEmail = errors.New("missing email for password reset")
 
 	// ErrSavingRecoveryToken indicates error saving recovery token
@@ -44,6 +43,14 @@ var (
 
 	// ErrRetrievingRecoveryToken indicates error deleting recovery token
 	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
+
+	// ErrMissingResetToken indicates malformed or missing reset token
+	// for reseting password
+	ErrMissingResetToken = errors.New("error missing reset token")
+
+	// ErrGeneratingResetToken indicates error in generating password recovery
+	// token
+	ErrGeneratingResetToken = errors.New("error missing reset token")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -66,23 +73,12 @@ type Service interface {
 	// Get authenticated user info for the given token
 	UserInfo(ctx context.Context, token string) (User, error)
 
-<<<<<<< HEAD
 	// GenerateResetToken email where mail will be sent.
 	// host is used for generating reset link.
 	GenerateResetToken(_ context.Context, email, host string) error
 
-	// ChangePassword change users password
-	ChangePassword(_ context.Context, email, token, password string) error
-=======
-	// SaveToken
-	SaveToken(_ context.Context, email, token string) error
-
-	// RetrieveToken
-	RetrieveToken(_ context.Context, email string) (string, error)
-
-	// DeleteToken
-	DeleteToken(_ context.Context, email string) error
->>>>>>> adding token endpoints
+	// UpdatePassword change users password in reset flow
+	UpdatePassword(_ context.Context, email, password string) error
 }
 
 var _ Service = (*usersService)(nil)
@@ -145,12 +141,9 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 		Password: "",
 		Metadata: dbUser.Metadata,
 	}, nil
-
 }
 
-<<<<<<< HEAD
 func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
-
 	user, err := svc.users.RetrieveByID(ctx, email)
 	if err != nil || user.Email == "" {
 		return ErrUserNotFound
@@ -162,59 +155,19 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 	}
 
 	token.SendToken(host, email, tok)
-
 	return nil
 }
 
-func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
+func (svc usersService) UpdatePassword(ctx context.Context, email, password string) error {
 	u, err := svc.users.RetrieveByID(ctx, email)
 	if err != nil || u.Email == "" {
-		fmt.Println("err.Error()")
 		return ErrUserNotFound
-	}
-
-	err = token.Verify(email, tok, "")
-	if err != nil {
-		return err
 	}
 
 	password, err = svc.hasher.Hash(password)
 	if err != nil {
 		return err
 	}
-	err = svc.users.ChangePassword(ctx, email, tok, password)
+	err = svc.users.UpdatePassword(ctx, email, password)
 	return err
-=======
-func (svc usersService) SaveToken(ctx context.Context, email, token string) error {
-
-	err := svc.users.SaveToken(ctx, email, token)
-	if err != nil {
-		return ErrSavingRecoveryToken
-	}
-
-	return nil
-
-}
-
-func (svc usersService) RetrieveToken(ctx context.Context, email string) (string, error) {
-
-	token, err := svc.users.RetrieveToken(ctx, email)
-	if err != nil {
-		return "", ErrSavingRecoveryToken
-	}
-
-	return token, nil
-
-}
-
-func (svc usersService) DeleteToken(ctx context.Context, email string) error {
-
-	err := svc.users.DeleteToken(ctx, email)
-	if err != nil {
-		return ErrDeletingRecoveryToken
-	}
-
-	return nil
->>>>>>> adding token endpoints
-
 }

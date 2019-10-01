@@ -3,9 +3,7 @@
 
 package http
 
-import (
-	"github.com/mainflux/mainflux/users"
-)
+import "github.com/mainflux/mainflux/users"
 
 type apiReq interface {
 	validate() error
@@ -71,6 +69,25 @@ type passResReq struct {
 func (req passResReq) validate() error {
 	if req.user.Email == "" {
 		return users.ErrMissingEmail
+	}
+	return nil
+}
+
+type resetTokenReq struct {
+	token    string
+	email    string
+	password string
+}
+
+func (req resetTokenReq) validate() error {
+	if req.token == "" {
+		return users.ErrMisingResetToken
+	}
+	if req.email == "" {
+		return users.ErrMissingEmail
+	}
+	if req.password == "" {
+		return users.ErrMalformedEntity
 	}
 	return nil
 }
