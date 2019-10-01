@@ -12,10 +12,15 @@ import (
 	"sync"
 	"time"
 
+<<<<<<< HEAD
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users/mail"
+=======
+	"github.com/mainflux/mainflux/users/mail"
+	"golang.org/x/crypto/bcrypt"
+>>>>>>> add logic for token verifying
 )
 
 var (
@@ -109,6 +114,7 @@ func (t *tokenizer) generate(email string, offset int) (string, error) {
 	return tokenString, err
 }
 
+<<<<<<< HEAD
 // Verify verifies token validity
 func (t *tokenizer) verify(tok string) (string, error) {
 	email := ""
@@ -139,6 +145,24 @@ func (t *tokenizer) verify(tok string) (string, error) {
 func (t *tokenizer) sendToken(host, email, token string) {
 	body := t.buildBody(host, email, token)
 	mail.Send([]string{email}, body)
+=======
+// SendToken sends password recovery link to user
+func SendToken(email, token string) {
+	body := buildBody(email, token)
+	mail.Send([]string{email}, body)
+}
+
+// Builds recovery email body
+func buildBody(email, token string) []byte {
+	msg := []byte(fmt.Sprintf("To: %s\r\n"+
+		"Subject: Reset Password!\r\n"+
+		"\r\n"+
+		"You have initiated password reset.\r\n"+
+		"Follow the link below to reset password.\r\n"+
+		"/passwd/reset?token=%s", email, token))
+
+	return msg
+>>>>>>> add logic for token verifying
 }
 
 // Builds recovery email body
