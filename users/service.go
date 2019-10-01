@@ -6,6 +6,8 @@ package users
 import (
 	"context"
 	"errors"
+
+	"github.com/mainflux/mainflux/users/token"
 )
 
 var (
@@ -38,6 +40,14 @@ var (
 
 	// ErrRetrievingRecoveryToken indicates error deleting recovery token
 	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
+
+	// ErrMisingResetToken indicates malformed or missing reset token
+	// for reseting password.
+	ErrMisingResetToken = errors.New("error mising reset token")
+
+	// ErrGeneratingResetToken indicates error in generating password recovery
+	// token.
+	ErrGeneratingResetToken = errors.New("error mising reset token")
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -68,6 +78,12 @@ type Service interface {
 
 	// DeleteToken
 	DeleteToken(_ context.Context, email string) error
+
+	// GenerateResetToken
+	GenerateResetToken(_ context.Context, email string) (string, error)
+
+	// ChangePassword
+	ChangePassword(_ context.Context, email, token, password string) (string, error)
 }
 
 var _ Service = (*usersService)(nil)
@@ -133,9 +149,12 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 
 }
 
-func (svc usersService) SaveToken(ctx context.Context, email, token string) error {
-
-	err := svc.users.SaveToken(ctx, email, token)
+func (svc usersService) SaveToken(ctx context.Context, email, tok string) error {
+	tok, err := token.Hash(tok)
+	if err != nil {
+		return ErrSavingRecoveryToken
+	}
+	err = svc.users.SaveToken(ctx, email, tok)
 	if err != nil {
 		return ErrSavingRecoveryToken
 	}
@@ -158,6 +177,31 @@ func (svc usersService) RetrieveToken(ctx context.Context, email string) (string
 func (svc usersService) DeleteToken(ctx context.Context, email string) error {
 
 	err := svc.users.DeleteToken(ctx, email)
+	if err != nil {
+		return ErrDeletingRecoveryToken
+	}
+
+	return nil
+
+}
+
+func (svc usersService) GenerateResetToken(ctx context.Context, email string) (string, error) {
+
+	tok, err := token.Generate(email)
+	if err != nil {
+		return "", ErrGeneratingResetToken
+	}
+	return tok, nil
+}
+
+func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
+	u, err := svc.users.RetrieveByID(ctx, email)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	retToken, err := svc.users.RetrieveToken(ctx, email)
+	token.Verify(tok, retToken)
 	if err != nil {
 		return ErrDeletingRecoveryToken
 	}

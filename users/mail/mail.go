@@ -79,7 +79,7 @@ func initAgent() *agent {
 			Host:        mainflux.Env(envMailHost, defMailHost),
 			Port:        mainflux.Env(envMailPort, defMailPort),
 			Username:    mainflux.Env(envMailUsername, defMailUsername),
-			Password:    mainflux.Env(envMailPassword, envMailPassword),
+			Password:    mainflux.Env(envMailPassword, defMailPassword),
 		}
 
 		logLevel := mainflux.Env(envMailLogLevel, defMailLogLevel)
@@ -104,8 +104,7 @@ func Send(to []string, msg []byte) {
 	go func() {
 		err := smtp.SendMail(addr, auth, a.conf.FromAddress, to, msg)
 		if err != nil {
-			log.Fatal(err)
+			a.log.Error(fmt.Sprintf("Failed to send mail:%s", err.Error()))
 		}
 	}()
-
 }
