@@ -118,15 +118,13 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 
 func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(resetTokenReq)
+		err := svc.ChangePassword(ctx, req.email, req.token, req.password)
+		if err != nil {
+			return `{"password":"NOT CHANGED"}`, err
+		}
 
-		// TO DO
-		// this endpoint will actually change password after user has followed
-		// password reset link. Password reset link will take user to the page
-		// with form to enter the new password, when submited request will contain
-		// new password along with token from the password reset link
-		//
-
-		return nil, nil
+		return `{"password":"OK"}`, nil
 	}
 }
 
