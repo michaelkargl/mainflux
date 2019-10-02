@@ -45,25 +45,8 @@ type UserRepository interface {
 	// RetrieveByID retrieves user by its unique identifier (i.e. email).
 	RetrieveByID(context.Context, string) (User, error)
 
-<<<<<<< HEAD
 	// UpdatePassword updates password for user with given email
 	UpdatePassword(_ context.Context, email, password string) error
-=======
-	// SaveToken
-	SaveToken(_ context.Context, email, token string) error
-
-	// RetrieveToken
-	RetrieveToken(_ context.Context, email string) (string, error)
-
-	// DeleteToken
-	DeleteToken(_ context.Context, email string) error
-
-	// GenerateResetToken
-	GenerateResetToken(_ context.Context, email string)
-
-	// ChangePassword
-	ChangePassword(_ context.Context, email, token, password string)
->>>>>>> add logic for token verifying
 }
 
 func isEmail(email string) bool {
