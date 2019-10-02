@@ -108,7 +108,7 @@ func (ur userRepository) DeleteToken(_ context.Context, email string) error {
 }
 
 func (ur userRepository) ChangePassword(_ context.Context, email, token, password string) error {
-	q := `UPDATE user SET  password = :password  WHERE email = :email`
+	q := `UPDATE users SET  password = :password  WHERE email = :email`
 
 	db := struct {
 		Password string
@@ -122,10 +122,6 @@ func (ur userRepository) ChangePassword(_ context.Context, email, token, passwor
 		return err
 	}
 
-	q = `DELETE FROM tokens WHERE user_id = :email`
-	if _, err := ur.db.NamedExec(q, db); err != nil {
-		return err
-	}
 	return nil
 }
 
