@@ -12,31 +12,14 @@ import (
 )
 
 const (
-	// defMailLogLevel    = "debug"
-	// defMailDriver      = "smtp"
-	// defMailHost        = "localhost"
-	// defMailPort        = "25"
-	// defMailUsername    = "root"
-	// defMailPassword    = ""
-	// defMailFromAddress = ""
-	// defMailFromName    = ""
-
-	// 	MF_USERS_MAIL_DRIVER=smtp
-	// MF_USERS_MAIL_HOST=smtp.mailtrap.io
-	// MF_USERS_MAIL_PORT=2525
-	// MF_USERS_MAIL_USERNAME=18bf7f70705139
-	// MF_USERS_MAIL_PASSWORD=2b0d302e775b1e
-	// MF_USERS_MAIL_FROM_ADDRESS=from@example.com
-	// MF_USERS_MAIL_FROM_NAME=Example
-
 	defMailLogLevel    = "debug"
 	defMailDriver      = "smtp"
-	defMailHost        = "smtp.mailtrap.io"
-	defMailPort        = "2525"
-	defMailUsername    = "18bf7f70705139"
-	defMailPassword    = "2b0d302e775b1e"
-	defMailFromAddress = "from@example.com"
-	defMailFromName    = "Example"
+	defMailHost        = "localhost"
+	defMailPort        = "25"
+	defMailUsername    = "root"
+	defMailPassword    = ""
+	defMailFromAddress = ""
+	defMailFromName    = ""
 
 	envMailDriver      = "MF_MAIL_DRIVER"
 	envMailHost        = "MF_MAIL_HOST"
@@ -61,6 +44,8 @@ type mail struct {
 // Agent for mailing
 type agent struct {
 	conf mail
+	auth smtp.Auth
+	addr string
 	log  logger.Logger
 }
 
@@ -82,6 +67,10 @@ func initAgent() *agent {
 			Password:    mainflux.Env(envMailPassword, defMailPassword),
 		}
 
+		// Set up authentication information.
+		instance.auth = smtp.PlainAuth("", instance.conf.Username, instance.conf.Password, instance.conf.Host)
+		instance.addr = fmt.Sprintf("%s:%s", instance.conf.Host, instance.conf.Port)
+
 		logLevel := mainflux.Env(envMailLogLevel, defMailLogLevel)
 		logger, err := logger.New(os.Stdout, logLevel)
 		if err != nil {
@@ -93,16 +82,11 @@ func initAgent() *agent {
 	return instance
 }
 
-// Send sends mail
+// Send sends mail.
 func Send(to []string, msg []byte) {
-	// Set up authentication information.
-	a := initAgent()
-	auth := smtp.PlainAuth("", a.conf.Username, a.conf.Password, a.conf.Host)
-	// Connect to the server, authenticate, set the sender and recipient,
-	// and send the email all in one step.
-	addr := fmt.Sprintf("%s:%s", a.conf.Host, a.conf.Port)
 	go func() {
-		err := smtp.SendMail(addr, auth, a.conf.FromAddress, to, msg)
+		a := initAgent()
+		err := smtp.SendMail(a.addr, a.auth, a.conf.FromAddress, to, msg)
 		if err != nil {
 			a.log.Error(fmt.Sprintf("Failed to send mail:%s", err.Error()))
 		}
