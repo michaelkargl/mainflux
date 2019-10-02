@@ -26,6 +26,7 @@ const contentType = "application/json"
 
 var (
 	errUnsupportedContentType = errors.New("unsupported content type")
+	errMissingRefererHeader   = errors.New("missing referer header")
 	errInvalidToken           = errors.New("invalid token")
 	errNoTokenSupplied        = errors.New("no token supplied")
 	logger                    log.Logger
@@ -57,7 +58,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 
 	mux.Post("/passwd/res-req", kithttp.NewServer(
 		kitot.TraceServer(tracer, "res-req")(passwordResetRequestEndpoint(svc)),
-		decodePasswordReset,
+		decodePasswordResetRequest,
 		encodeResponse,
 		opts...,
 	))
@@ -71,7 +72,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 
 	mux.Post("/passwd/reset", kithttp.NewServer(
 		kitot.TraceServer(tracer, "reset")(passwordResetEndpointPost(svc)),
-		decodePasswdUpdate,
+		decodePasswordReset,
 		encodeResponse,
 		opts...,
 	))
@@ -118,6 +119,22 @@ func decodeCredentials(_ context.Context, r *http.Request) (interface{}, error) 
 	return userReq{user}, nil
 }
 
+func decodePasswordResetRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		logger.Warn("Invalid or missing content type.")
+		return nil, errUnsupportedContentType
+	}
+
+	var req passwResetReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(fmt.Sprintf("Failed to decode reset request: %s", err))
+		return nil, err
+	}
+
+	req.Host = r.Header.Get("Referer")
+	return req, nil
+}
+
 func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
 		logger.Warn("Invalid or missing content type.")
@@ -126,25 +143,11 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 
 	var req resetTokenReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn(fmt.Sprintf("Failed to decode user credentials: %s", err))
+		logger.Warn(fmt.Sprintf("Failed to decode reset request: %s", err))
 		return nil, err
 	}
 
-	return req, nil
-}
-
-func decodePasswdUpdate(_ context.Context, r *http.Request) (interface{}, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
-		logger.Warn("Invalid or missing content type.")
-		return nil, errUnsupportedContentType
-	}
-
-	var req resetTokenReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn(fmt.Sprintf("Failed to decode user credentials: %s", err))
-		return nil, err
-	}
-
+	req.Host = r.Header.Get("Referer")
 	return req, nil
 }
 
