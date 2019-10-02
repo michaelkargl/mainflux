@@ -45,48 +45,21 @@ func (req passwResetReq) validate() error {
 
 type resetTokenReq struct {
 	Token    string `json:"token,omitempty"`
-	Email    string `json:"email,omitempty"`
 	Password string `json:"password,omitempty"`
+	ConfPass string `json:"confirmPassword,omitempty"`
 }
 
 func (req resetTokenReq) validate() error {
 	if req.Token == "" {
-		return users.ErrMisingResetToken
-	}
-	if req.Email == "" {
-		return users.ErrMissingEmail
+		return users.ErrMissingResetToken
 	}
 	if req.Password == "" {
 		return users.ErrMalformedEntity
 	}
-	return nil
-}
-
-type passResReq struct {
-	user users.User
-}
-
-func (req passResReq) validate() error {
-	if req.user.Email == "" {
-		return users.ErrMissingEmail
+	if req.ConfPass == "" {
+		return users.ErrMalformedEntity
 	}
-	return nil
-}
-
-type resetTokenReq struct {
-	token    string
-	email    string
-	password string
-}
-
-func (req resetTokenReq) validate() error {
-	if req.token == "" {
-		return users.ErrMisingResetToken
-	}
-	if req.email == "" {
-		return users.ErrMissingEmail
-	}
-	if req.password == "" {
+	if req.Password != req.ConfPass {
 		return users.ErrMalformedEntity
 	}
 	return nil

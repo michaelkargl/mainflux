@@ -102,3 +102,29 @@ func (lm *loggingMiddleware) ChangePassword(ctx context.Context, email, token, p
 
 	return lm.svc.ChangePassword(ctx, email, token, password)
 }
+
+func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email string) (token string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method generate_reset_token for user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GenerateResetToken(ctx, email)
+}
+
+func (lm *loggingMiddleware) ChangePassword(ctx context.Context, email, token, password string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method change_password for user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ChangePassword(ctx, email, token, password)
+}
