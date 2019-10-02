@@ -91,19 +91,19 @@ func Hash(token string) (string, error) {
 }
 
 // SendToken sends password recovery link to user
-func SendToken(email, token string) {
-	body := buildBody(email, token)
+func SendToken(host, email, token string) {
+	body := buildBody(host, email, token)
 	mail.Send([]string{email}, body)
 }
 
 // Builds recovery email body
-func buildBody(email, token string) []byte {
+func buildBody(host, email, token string) []byte {
 	msg := []byte(fmt.Sprintf("To: %s\r\n"+
 		"Subject: Reset Password!\r\n"+
 		"\r\n"+
 		"You have initiated password reset.\r\n"+
 		"Follow the link below to reset password.\r\n"+
-		"/passwd/reset?token=%s", email, token))
+		"%s/passwd/reset?token=%s", email, host, token))
 
 	return msg
 }

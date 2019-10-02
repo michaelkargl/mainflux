@@ -28,6 +28,21 @@ func (req viewUserInfoReq) validate() error {
 	return nil
 }
 
+type passwResetReq struct {
+	Email string
+	Host  string
+}
+
+func (req passwResetReq) validate() error {
+	if req.Email == "" {
+		return users.ErrMissingEmail
+	}
+	if req.Host == "" {
+		return users.ErrMalformedEntity
+	}
+	return nil
+}
+
 type resetTokenReq struct {
 	Token    string
 	Email    string
@@ -35,6 +50,7 @@ type resetTokenReq struct {
 }
 
 func (req resetTokenReq) validate() error {
+
 	if req.Token == "" {
 		return users.ErrMisingResetToken
 	}
