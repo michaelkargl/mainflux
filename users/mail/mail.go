@@ -32,13 +32,13 @@ const (
 )
 
 type mail struct {
-	Driver      string
-	Host        string
-	Port        string
-	Username    string
-	Password    string
-	FromAddress string
-	FromName    string
+	driver      string
+	host        string
+	port        string
+	username    string
+	password    string
+	fromAddress string
+	fromName    string
 }
 
 // Agent for mailing
@@ -58,18 +58,18 @@ func initAgent() *agent {
 		instance = &agent{}
 
 		instance.conf = mail{
-			Driver:      mainflux.Env(envMailDriver, defMailDriver),
-			FromAddress: mainflux.Env(envMailFromAddress, defMailFromAddress),
-			FromName:    mainflux.Env(envMailFromName, defMailFromName),
-			Host:        mainflux.Env(envMailHost, defMailHost),
-			Port:        mainflux.Env(envMailPort, defMailPort),
-			Username:    mainflux.Env(envMailUsername, defMailUsername),
-			Password:    mainflux.Env(envMailPassword, defMailPassword),
+			driver:      mainflux.Env(envMailDriver, defMailDriver),
+			fromAddress: mainflux.Env(envMailFromAddress, defMailFromAddress),
+			fromName:    mainflux.Env(envMailFromName, defMailFromName),
+			host:        mainflux.Env(envMailHost, defMailHost),
+			port:        mainflux.Env(envMailPort, defMailPort),
+			username:    mainflux.Env(envMailUsername, defMailUsername),
+			password:    mainflux.Env(envMailPassword, defMailPassword),
 		}
 
 		// Set up authentication information.
-		instance.auth = smtp.PlainAuth("", instance.conf.Username, instance.conf.Password, instance.conf.Host)
-		instance.addr = fmt.Sprintf("%s:%s", instance.conf.Host, instance.conf.Port)
+		instance.auth = smtp.PlainAuth("", instance.conf.username, instance.conf.password, instance.conf.host)
+		instance.addr = fmt.Sprintf("%s:%s", instance.conf.host, instance.conf.port)
 
 		logLevel := mainflux.Env(envMailLogLevel, defMailLogLevel)
 		logger, err := logger.New(os.Stdout, logLevel)
@@ -86,7 +86,7 @@ func initAgent() *agent {
 func Send(to []string, msg []byte) {
 	go func() {
 		a := initAgent()
-		err := smtp.SendMail(a.addr, a.auth, a.conf.FromAddress, to, msg)
+		err := smtp.SendMail(a.addr, a.auth, a.conf.fromAddress, to, msg)
 		if err != nil {
 			a.log.Error(fmt.Sprintf("Failed to send mail:%s", err.Error()))
 		}
