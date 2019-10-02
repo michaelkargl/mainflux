@@ -154,6 +154,7 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 		return nil, err
 	}
 
+	req.Host = r.Header.Get("Referer")
 	return req, nil
 }
 

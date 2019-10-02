@@ -19,7 +19,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.Register(ctx, req.user)
+		err := svc.Re[gister(ctx, req.user)
 		return tokenRes{}, err
 	}
 }
