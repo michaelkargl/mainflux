@@ -26,6 +26,8 @@ const contentType = "application/json"
 
 var (
 	errUnsupportedContentType = errors.New("unsupported content type")
+	errInvalidToken           = errors.New("invalid token")
+	errNoTokenSupplied        = errors.New("no token supplied")
 	logger                    log.Logger
 )
 
@@ -60,9 +62,16 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 		opts...,
 	))
 
+	mux.Get("/passwd/reset", kithttp.NewServer(
+		kitot.TraceServer(tracer, "reset")(passwordResetEndpointGet(svc)),
+		decodeToken,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Post("/passwd/reset", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordResetRequestEndpoint(svc)),
-		decodeCredentials,
+		kitot.TraceServer(tracer, "reset")(passwordResetEndpointPost(svc)),
+		decodePasswdUpdate,
 		encodeResponse,
 		opts...,
 	))
@@ -115,15 +124,43 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 		return nil, errUnsupportedContentType
 	}
 
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var req resetTokenReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Warn(fmt.Sprintf("Failed to decode user credentials: %s", err))
 		return nil, err
 	}
 
-	return passResReq{user}, nil
+	return req, nil
 }
 
+func decodePasswdUpdate(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		logger.Warn("Invalid or missing content type.")
+		return nil, errUnsupportedContentType
+	}
+
+	var req resetTokenReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(fmt.Sprintf("Failed to decode user credentials: %s", err))
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func decodeToken(_ context.Context, r *http.Request) (interface{}, error) {
+	vals := bone.GetQuery(r, "token")
+	if len(vals) > 1 {
+		return "", errInvalidToken
+	}
+
+	if len(vals) == 0 {
+		return "", errNoTokenSupplied
+	}
+	t := vals[0]
+	return t, nil
+
+}
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 
