@@ -83,7 +83,7 @@ type Service interface {
 	GenerateResetToken(_ context.Context, email string) (string, error)
 
 	// ChangePassword
-	ChangePassword(_ context.Context, email, token, password string) (string, error)
+	ChangePassword(_ context.Context, email, token, password string) error
 }
 
 var _ Service = (*usersService)(nil)
@@ -150,11 +150,8 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 }
 
 func (svc usersService) SaveToken(ctx context.Context, email, tok string) error {
-	tok, err := token.Hash(tok)
-	if err != nil {
-		return ErrSavingRecoveryToken
-	}
-	err = svc.users.SaveToken(ctx, email, tok)
+
+	err := svc.users.SaveToken(ctx, email, tok)
 	if err != nil {
 		return ErrSavingRecoveryToken
 	}
@@ -185,7 +182,7 @@ func (svc usersService) DeleteToken(ctx context.Context, email string) error {
 
 }
 
-func (svc usersService) GenerateResetToken(ctx context.Context, email string) (string, error) {
+func (svc usersService) GenerateResetToken(_ context.Context, email string) (string, error) {
 
 	tok, err := token.Generate(email)
 	if err != nil {
@@ -196,16 +193,25 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email string) (s
 
 func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
 	u, err := svc.users.RetrieveByID(ctx, email)
-	if err != nil {
+	if err != nil || u.Email == "" {
 		return ErrNotFound
 	}
 
 	retToken, err := svc.users.RetrieveToken(ctx, email)
-	token.Verify(tok, retToken)
 	if err != nil {
-		return ErrDeletingRecoveryToken
+		return err
 	}
 
-	return nil
+	token.Verify(tok, retToken)
+	if err != nil {
+		return err
+	}
+
+	password, err = svc.hasher.Hash(password)
+	if err != nil {
+		return err
+	}
+	err = svc.users.ChangePassword(ctx, email, tok, password)
+	return err
 
 }

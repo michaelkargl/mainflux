@@ -55,9 +55,9 @@ func passwordUpdateEndpoint(svc users.Service) endpoint.Endpoint {
 
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(passResReq)
-		email := req.user.Email
-		tok, err := svc.GenerateResetToken(email)
+		req := request.(resetTokenReq)
+		email := req.Email
+		tok, err := svc.GenerateResetToken(ctx, email)
 		if err != nil {
 			return nil, err
 		}
@@ -70,10 +70,17 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
+func passwordResetEndpointGet(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(string)
+		return struct{ Token string }{req}, nil
+	}
+}
+
+func passwordResetEndpointPost(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resetTokenReq)
-		err := svc.ChangePassword(ctx, req.email, req.token, req.password)
+		err := svc.ChangePassword(ctx, req.Email, req.Token, req.Password)
 		if err != nil {
 			return `{"password":"NOT CHANGED"}`, err
 		}
