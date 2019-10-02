@@ -89,6 +89,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
