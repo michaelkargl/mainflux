@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	saveOp         = "save_op"
-	retrieveByIDOp = "retrieve_by_id"
-	saveToken      = "save_token"
-	retrieveToken  = "retrieve_token"
-	deleteToken    = "delete_token"
+	saveOp             = "save_op"
+	retrieveByIDOp     = "retrieve_by_id"
+	saveToken          = "save_token"
+	retrieveToken      = "retrieve_token"
+	deleteToken        = "delete_token"
+	generateResetToken = "generate_reset_token"
+	changePassword     = "change_password"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -74,6 +76,14 @@ func (urm userRepositoryMiddleware) DeleteToken(ctx context.Context, email strin
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return urm.repo.DeleteToken(ctx, email)
+}
+
+func (urm userRepositoryMiddleware) ChangePassword(ctx context.Context, email, token, password string) error {
+	span := createSpan(ctx, urm.tracer, deleteToken)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.ChangePassword(ctx, email, token, password)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {

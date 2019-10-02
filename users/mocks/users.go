@@ -47,3 +47,21 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, email string) (
 
 	return val, nil
 }
+func (urm *userRepositoryMock) SaveToken(_ context.Context, email, token string) error {
+	return nil
+}
+
+// RetrieveToken
+func (urm *userRepositoryMock) RetrieveToken(_ context.Context, email string) (string, error) {
+	return "", nil
+}
+
+// DeleteToken
+func (urm *userRepositoryMock) DeleteToken(_ context.Context, email string) error {
+	return nil
+}
+
+// ChangePassword
+func (urm *userRepositoryMock) ChangePassword(_ context.Context, email, token, password string) error {
+	return nil
+}

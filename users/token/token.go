@@ -26,7 +26,7 @@ var (
 	tokenLength = ttlLength + emailLength
 	hashCost    = 10
 	// Recovery token TTL in minutes, reperesents token time to live
-	tokenDuration = 1
+	tokenDuration = 5
 	// Random string for secret key, required for signing
 	secret = "fcERNb7KpM3WyAmguJMZ"
 	domain = "https://localhost"
@@ -51,6 +51,7 @@ func Generate(email string) (string, error) {
 	if err != nil {
 		return "", errTokenGeneration
 	}
+
 	return base64.URLEncoding.EncodeToString(b), nil
 }
 
@@ -61,10 +62,13 @@ func Verify(token string, hashed string) error {
 	if blen > tokenLength {
 		return errMalformedToken
 	}
+
 	b, err := base64.URLEncoding.DecodeString(token)
 	if err != nil {
 		return errMalformedToken
 	}
+	fmt.Println(fmt.Sprintf("Hash:%s", hashed))
+	fmt.Println(fmt.Sprintf("tok:%s", token))
 	// Compare token with stored hashed version
 	if err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(token)); err != nil {
 		return errWrongSignature

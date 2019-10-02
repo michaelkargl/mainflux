@@ -54,11 +54,8 @@ type UserRepository interface {
 	// DeleteToken
 	DeleteToken(_ context.Context, email string) error
 
-	// GenerateResetToken
-	GenerateResetToken(_ context.Context, email string)
-
 	// ChangePassword
-	ChangePassword(_ context.Context, email, token, password string)
+	ChangePassword(_ context.Context, email, token, password string) error
 }
 
 func isEmail(email string) bool {
