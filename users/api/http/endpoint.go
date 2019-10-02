@@ -41,7 +41,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
-		return nil, nil
+		return "email with reset link is sent", nil
 	}
 }
 
@@ -64,10 +64,9 @@ func passwordResetEndpointPost(svc users.Service) endpoint.Endpoint {
 		req := request.(resetTokenReq)
 		err := svc.ChangePassword(ctx, req.Email, req.Token, req.Password)
 		if err != nil {
-			return `{"password":"NOT CHANGED"}`, err
+			return `{"password":"CHNGERR"}`, err
 		}
-
-		return `{"password":"OK"}`, nil
+		return `{"password":"CHANGED"}`, nil
 	}
 }
 
