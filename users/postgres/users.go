@@ -89,7 +89,7 @@ func (ur userRepository) SaveToken(_ context.Context, email, tok string) error {
 			return users.ErrConflict
 		}
 	}
-	token.SendToken(email, tok)
+
 	return nil
 }
 
