@@ -21,8 +21,7 @@ type userRepositoryMock struct {
 // NewUserRepository creates in-memory user repository
 func NewUserRepository() users.UserRepository {
 	return &userRepositoryMock{
-		users:  make(map[string]users.User),
-		tokens: make(map[string]string),
+		users: make(map[string]users.User),
 	}
 }
 
@@ -50,8 +49,7 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, email string) (
 	return val, nil
 }
 
-// ChangePassword
-func (urm *userRepositoryMock) ChangePassword(_ context.Context, email, token, password string) error {
+func (urm *userRepositoryMock) UpdatePassword(_ context.Context, email, password string) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 	_, ok := urm.users[email]
