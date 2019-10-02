@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/users"
+	"github.com/mainflux/mainflux/users/token"
 )
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
@@ -71,7 +72,10 @@ func passwordResetPatchEndpoint(svc users.Service) endpoint.Endpoint {
 // Link contains token that has TTL that needs to be verified.
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(resetTokenReq)
+		req := request.(passwResetReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
 		email := req.Email
 		tok, err := svc.GenerateResetToken(ctx, email)
 		if err != nil {
@@ -82,6 +86,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 		if err != nil {
 			return nil, err
 		}
+		token.SendToken(req.Host, email, tok)
 		return "email with reset link is sent", nil
 	}
 }
