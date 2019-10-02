@@ -12,14 +12,21 @@ import (
 )
 
 const (
-	defMailLogLevel    = "debug"
-	defMailDriver      = "smtp"
-	defMailHost        = "localhost"
-	defMailPort        = "25"
-	defMailUsername    = "root"
-	defMailPassword    = ""
-	defMailFromAddress = ""
-	defMailFromName    = ""
+	defMailLogLevel = "debug"
+	defMailDriver   = "smtp"
+	// defMailHost        = "localhost"
+	// defMailPort        = "25"
+	// defMailUsername    = "root"
+	// defMailPassword    = ""
+	// defMailFromAddress = ""
+	// defMailFromName    = ""
+
+	defMailHost        = "smtp.mailtrap.io"
+	defMailPort        = "2525"
+	defMailUsername    = "18bf7f70705139"
+	defMailPassword    = "2b0d302e775b1e"
+	defMailFromAddress = "from@example.com"
+	defMailFromName    = "Example"
 
 	envMailDriver      = "MF_MAIL_DRIVER"
 	envMailHost        = "MF_MAIL_HOST"
