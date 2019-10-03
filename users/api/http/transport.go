@@ -63,15 +63,8 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 		opts...,
 	))
 
-	mux.Get("/passwd/reset", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordResetEndpointGet(svc)),
-		decodeToken,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Post("/passwd/reset", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordResetEndpointPost(svc)),
+		kitot.TraceServer(tracer, "reset")(passwordResetPostEndpoint(svc)),
 		decodePasswordReset,
 		encodeResponse,
 		opts...,
@@ -147,7 +140,6 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 		return nil, err
 	}
 
-	req.Host = r.Header.Get("Referer")
 	return req, nil
 }
 

@@ -46,3 +46,20 @@ func (res identityRes) Headers() map[string]string {
 func (res identityRes) Empty() bool {
 	return false
 }
+
+type resetPassRes struct {
+	Msg   string
+	Error string
+}
+
+func (res resetPassRes) Code() int {
+	return http.StatusOK
+}
+
+func (res resetPassRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res resetPassRes) Empty() bool {
+	return false
+}

@@ -50,7 +50,6 @@ type resetTokenReq struct {
 }
 
 func (req resetTokenReq) validate() error {
-
 	if req.Token == "" {
 		return users.ErrMisingResetToken
 	}
