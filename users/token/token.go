@@ -17,24 +17,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Recovery token bytes
 var (
-	emailLength  = 254
-	ttlLength    = 4
-	secretLength = 20
-	// Max token length is 4 bytes + max email length
-	tokenLength = ttlLength + emailLength
-	hashCost    = 10
-	// Recovery token TTL in minutes, reperesents token time to live
-	tokenDuration = 5
-	// Random string for secret key, required for signing
-	secret = "fcERNb7KpM3WyAmguJMZ"
-	domain = "https://localhost"
+	emailLength   = 254
+	ttlLength     = 4
+	secretLength  = 20
+	tokenLength   = ttlLength + emailLength // Max token length is 4 bytes + max email length
+	hashCost      = 10
+	tokenDuration = 1                      // Recovery token TTL in minutes, reperesents token time to live
+	secret        = "fcERNb7KpM3WyAmguJMZ" // Random string for secret key, required for signing
+
 	// Errors
 	errMalformedToken  = errors.New("Malformed token")
 	errExpiredToken    = errors.New("Token expired")
 	errWrongSignature  = errors.New("Wrong token signature")
-	errTokenGeneration = errors.New("Token generation faild")
+	errTokenGeneration = errors.New("Token generation failed")
 )
 
 // Generate generate new random token with defined TTL
@@ -67,8 +63,6 @@ func Verify(token string, hashed string) error {
 	if err != nil {
 		return errMalformedToken
 	}
-	fmt.Println(fmt.Sprintf("Hash:%s", hashed))
-	fmt.Println(fmt.Sprintf("tok:%s", token))
 	// Compare token with stored hashed version
 	if err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(token)); err != nil {
 		return errWrongSignature
