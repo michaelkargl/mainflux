@@ -23,8 +23,12 @@ func TestVerify(t *testing.T) {
 		t.Errorf("Token generation failed.")
 	}
 
-	if err := token.Verify(email, tok, ""); err != nil {
+	e, err := token.Verify(tok)
+	if err != nil {
 		fmt.Println("Here is a error:", err)
+		t.Errorf("Token verification failed.")
+	}
+	if e != email {
 		t.Errorf("Token verification failed.")
 	}
 
