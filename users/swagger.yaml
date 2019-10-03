@@ -34,6 +34,27 @@ paths:
           description: Missing or invalid content type.
         500:
           $ref: "#/responses/ServiceError"
+  /users:
+    get:
+      summary: Gets info on currently logged in user.
+      description: |
+        Gets info on currently logged in user. Info is obtained using 
+        authorization token
+      tags:
+        - users
+      parameters:
+        - $ref: "#/parameters/Authorization"
+      responses:
+        200:
+          description: Data retrieved.
+          schema:
+            $ref: "#/definitions/UsersPage"
+        400:
+          description: Failed due to malformed query parameters.
+        403:
+          description: Missing or invalid access token provided.
+        500:
+          $ref: "#/responses/ServiceError"  
   /tokens:
     post:
       summary: User authentication
@@ -63,6 +84,84 @@ paths:
           description: Missing or invalid content type.
         500:
           $ref: "#/responses/ServiceError"
+  /passwd/res-req:
+    post:
+      summary: User password reset request
+      description: |
+        Generates a reset token and sends and email with link for reseting password.
+      tags:
+        - users
+      parameters:
+        - name: email
+          description: JSON-formatted document containing user email.
+          in: body
+          schema:
+            $ref: "#/definitions/Email"
+          required: true
+      responses:
+        200:
+          description: User link .
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: |
+            Failed due to malformed JSON. 
+        415:
+          description: Missing or invalid content type.
+        500:
+          $ref: "#/responses/ServiceError"
+  /passwd/res-req:
+    post:
+      summary: User password reset request
+      description: |
+        Generates a reset token and sends and email with link for reseting password.
+      tags:
+        - users
+      parameters:
+        - name: email
+          description: JSON-formatted document containing user email.
+          in: body
+          schema:
+            $ref: "#/definitions/Email"
+          required: true
+      responses:
+        200:
+          description: User link .
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: |
+            Failed due to malformed JSON. 
+        415:
+          description: Missing or invalid content type.
+        500:
+          $ref: "#/responses/ServiceError"
+  /passwd/reset:
+    post:
+      summary: User password reset endpoint
+      description: |
+        When user gets reset token posting a new password along to this endpoint will change password.
+      tags:
+        - users
+      parameters:
+        - name: password
+          description: JSON-formatted document containing user email, token and new password.
+          in: body
+          schema:
+            $ref: "#/definitions/PasswordReset"
+          required: true
+      responses:
+        200:
+          description: User link .
+          schema:
+            $ref: "#/definitions/Token"
+        400:
+          description: |
+            Failed due to malformed JSON. 
+        415:
+          description: Missing or invalid content type.
+        500:
+          $ref: "#/responses/ServiceError"        
 responses:
   ServiceError:
     description: Unexpected server-side error occured.
@@ -90,3 +189,49 @@ definitions:
     required:
       - email
       - password
+  Email:
+    properties:
+      email:
+        type: string
+        format: email
+        example: "test@example.com"
+        description: User's email address will be used as its unique identifier
+    required:
+      - email
+    
+
+parameters:
+  Authorization:
+    name: Authorization
+    description: User's access token.
+    in: header
+    type: string
+    required: true
+
+responses:
+  ServiceError:
+    description: Unexpected server-side error occured.
+
+definitions:
+  UsersPage:
+    type: object
+    properties:
+      email:
+        type: string
+        description: ID of the user
+      metadata:
+        type: object
+        description: Custom metadata related to User
+
+  PasswordReset:
+    type: object
+    properties:
+      email:
+        type: string
+        description: ID of the user
+      password:
+        type: string
+        description: New password
+      token:
+        type: string
+        description: Reset token generated and sent in email.s
