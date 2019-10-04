@@ -159,6 +159,7 @@ func decodeToken(_ context.Context, r *http.Request) (interface{}, error) {
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	w.Header().Set("Content-Type", contentType)
 
+	fmt.Println("users encode response")
 	if ar, ok := response.(mainflux.Response); ok {
 		for k, v := range ar.Headers() {
 			w.Header().Set(k, v)
@@ -182,6 +183,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusBadRequest)
 	case users.ErrUnauthorizedAccess:
 		w.WriteHeader(http.StatusForbidden)
+	case users.ErrUserNotFound:
+		w.WriteHeader(http.StatusBadRequest)
 	case users.ErrConflict:
 		w.WriteHeader(http.StatusConflict)
 	case errUnsupportedContentType:

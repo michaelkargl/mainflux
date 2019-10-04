@@ -27,7 +27,7 @@ func TestVerify(t *testing.T) {
 		t.Errorf("Token Hashing faild.")
 	}
 
-	if err := token.Verify(tok, hashed); err != nil {
+	if err := token.Verify(email, tok, hashed); err != nil {
 		fmt.Println("Here is a error:", err)
 		t.Errorf("Token verification faild.")
 	}
