@@ -156,7 +156,7 @@ func (svc usersService) SaveToken(ctx context.Context, email, tok string) error 
 
 	err := svc.users.SaveToken(ctx, email, tok)
 	if err != nil {
-		return ErrSavingRecoveryToken
+		return err
 	}
 
 	return nil
