@@ -47,10 +47,10 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 		err = svc.SaveToken(ctx, email, tok)
 		if err != nil {
 			res.Error = err.Error()
-			return res, err
+			return res, nil
 		}
 		token.SendToken(req.Host, email, tok)
-		res.Msg = mailSent
+		res.Msg = MailSent
 		return res, nil
 	}
 }
