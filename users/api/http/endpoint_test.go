@@ -171,3 +171,61 @@ func TestLogin(t *testing.T) {
 		assert.Equal(t, tc.res, token, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
 	}
 }
+
+func TestPasswordReset(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	tokenData := toJSON(map[string]string{"token": user.Email})
+	data := toJSON(user)
+	invalidEmailData := toJSON(users.User{
+		Email:    invalidEmail,
+		Password: "password",
+	})
+	invalidData := toJSON(users.User{
+		Email:    "user@example.com",
+		Password: "invalid_password",
+	})
+	nonexistentData := toJSON(users.User{
+		Email:    "non-existentuser@example.com",
+		Password: "pass",
+	})
+	svc.Register(context.Background(), user)
+
+	cases := []struct {
+		desc        string
+		req         string
+		contentType string
+		status      int
+		res         string
+	}{
+		{"login with valid credentials", data, contentType, http.StatusCreated, tokenData},
+		{"login with invalid credentials", invalidData, contentType, http.StatusForbidden, ""},
+		{"login with invalid email address", invalidEmailData, contentType, http.StatusBadRequest, ""},
+		{"login non-existent user", nonexistentData, contentType, http.StatusForbidden, ""},
+		{"login with invalid request format", "{", contentType, http.StatusBadRequest, ""},
+		{"login with empty JSON request", "{}", contentType, http.StatusBadRequest, ""},
+		{"login with empty request", "", contentType, http.StatusBadRequest, ""},
+		{"login with missing content type", data, "", http.StatusUnsupportedMediaType, ""},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      client,
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/tokens", ts.URL),
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		token := strings.Trim(string(body), "\n")
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.Equal(t, tc.res, token, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
+	}
+}

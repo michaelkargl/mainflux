@@ -12,6 +12,11 @@ import (
 var (
 	_ mainflux.Response = (*tokenRes)(nil)
 	_ mainflux.Response = (*identityRes)(nil)
+	_ mainflux.Response = (*resetPassRes)(nil)
+)
+
+const (
+	mailSent = "Mail with reset link is sent"
 )
 
 type tokenRes struct {
@@ -48,8 +53,8 @@ func (res identityRes) Empty() bool {
 }
 
 type resetPassRes struct {
-	Msg   string
-	Error string
+	Msg   string `json:"msg"`
+	Error string `json:"error"`
 }
 
 func (res resetPassRes) Code() int {
