@@ -19,6 +19,7 @@ import (
 )
 
 var (
+<<<<<<< HEAD
 
 	// ErrMalformedToken malformed token
 	ErrMalformedToken = errors.New("Malformed token")
@@ -26,6 +27,21 @@ var (
 	ErrExpiredToken = errors.New("Token is expired")
 	// ErrWrongSignature wrong signature
 	ErrWrongSignature = errors.New("Wrong token signature")
+=======
+	emailLength   = 254
+	ttlLength     = 4
+	secretLength  = 20
+	tokenLength   = ttlLength + emailLength // Max token length is 4 bytes + max email length
+	hashCost      = 10
+	tokenDuration = 5                      // Recovery token TTL in minutes, reperesents token time to live
+	secret        = "fcERNb7KpM3WyAmguJMZ" // Random string for secret key, required for signing
+
+	// Errors
+	errMalformedToken  = errors.New("Malformed token")
+	errExpiredToken    = errors.New("Token expired")
+	errWrongSignature  = errors.New("Wrong token signature")
+	errTokenGeneration = errors.New("Token generation failed")
+>>>>>>> addint test and update swagger for pass reset
 )
 
 const (
