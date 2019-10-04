@@ -26,6 +26,9 @@ var (
 	// ErrNotFound indicates a non-existent entity request.
 	ErrNotFound = errors.New("non-existent entity")
 
+	// ErrUserNotFound indicates a non-existent user request.
+	ErrUserNotFound = errors.New("non-existent user")
+
 	// ErrScanMetadata indicates problem with metadata in db
 	ErrScanMetadata = errors.New("Failed to scan metadata")
 
@@ -194,7 +197,7 @@ func (svc usersService) GenerateResetToken(_ context.Context, email string) (str
 func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
 	u, err := svc.users.RetrieveByID(ctx, email)
 	if err != nil || u.Email == "" {
-		return ErrNotFound
+		return ErrUserNotFound
 	}
 
 	retToken, err := svc.users.RetrieveToken(ctx, email)
@@ -202,7 +205,7 @@ func (svc usersService) ChangePassword(ctx context.Context, email, tok, password
 		return err
 	}
 
-	token.Verify(tok, retToken)
+	err = token.Verify(email, tok, retToken)
 	if err != nil {
 		return err
 	}

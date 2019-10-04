@@ -37,10 +37,6 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)
 		res := resetPassRes{}
-		if err := req.validate(); err != nil {
-			res.Error = err.Error()
-			return res, err
-		}
 		email := req.Email
 		tok, err := svc.GenerateResetToken(ctx, email)
 		if err != nil {
@@ -54,6 +50,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 			return res, err
 		}
 		token.SendToken(req.Host, email, tok)
+		res.Msg = mailSent
 		return res, nil
 	}
 }
@@ -64,11 +61,11 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 func passwordResetPostEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resetTokenReq)
+		res := resetPassRes{}
 		err := svc.ChangePassword(ctx, req.Email, req.Token, req.Password)
-		res := struct{ Error string }{}
 		if err != nil {
 			res.Error = err.Error()
-			return res, err
+			return res, nil
 		}
 		res.Error = ""
 		return res, nil
