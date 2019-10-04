@@ -15,8 +15,9 @@ var (
 	_ mainflux.Response = (*resetPassRes)(nil)
 )
 
+// MailSent message response when link is sent.
 const (
-	mailSent = "Mail with reset link is sent"
+	MailSent = "Mail with reset link is sent"
 )
 
 type tokenRes struct {

@@ -172,26 +172,27 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestPasswordReset(t *testing.T) {
+func TestPasswordResetRequest(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-
-	tokenData := toJSON(map[string]string{"token": user.Email})
+	expected := struct {
+		Msg   string
+		Error string
+	}{
+		httpapi.MailSent,
+		"",
+	}
 	data := toJSON(user)
-	invalidEmailData := toJSON(users.User{
-		Email:    invalidEmail,
-		Password: "password",
-	})
-	invalidData := toJSON(users.User{
-		Email:    "user@example.com",
-		Password: "invalid_password",
-	})
+	expectedExisting := toJSON(expected)
 	nonexistentData := toJSON(users.User{
 		Email:    "non-existentuser@example.com",
 		Password: "pass",
 	})
+	expected.Msg = ""
+	expected.Error = users.ErrUserNotFound.Error()
+	expectedNonExistent := toJSON(expected)
 	svc.Register(context.Background(), user)
 
 	cases := []struct {
@@ -201,21 +202,15 @@ func TestPasswordReset(t *testing.T) {
 		status      int
 		res         string
 	}{
-		{"login with valid credentials", data, contentType, http.StatusCreated, tokenData},
-		{"login with invalid credentials", invalidData, contentType, http.StatusForbidden, ""},
-		{"login with invalid email address", invalidEmailData, contentType, http.StatusBadRequest, ""},
-		{"login non-existent user", nonexistentData, contentType, http.StatusForbidden, ""},
-		{"login with invalid request format", "{", contentType, http.StatusBadRequest, ""},
-		{"login with empty JSON request", "{}", contentType, http.StatusBadRequest, ""},
-		{"login with empty request", "", contentType, http.StatusBadRequest, ""},
-		{"login with missing content type", data, "", http.StatusUnsupportedMediaType, ""},
+		{"password reset with valid email", data, contentType, http.StatusOK, expectedExisting},
+		{"password reset with invalid email", nonexistentData, contentType, http.StatusOK, expectedNonExistent},
 	}
 
 	for _, tc := range cases {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/tokens", ts.URL),
+			url:         fmt.Sprintf("%s/res-req", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
