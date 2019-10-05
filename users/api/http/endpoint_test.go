@@ -178,8 +178,8 @@ func TestPasswordResetRequest(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 	expected := struct {
-		Msg   string
-		Error string
+		Msg   string `json:"msg"`
+		Error string `json:"error"`
 	}{
 		httpapi.MailSent,
 		"",
@@ -210,7 +210,7 @@ func TestPasswordResetRequest(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/res-req", ts.URL),
+			url:         fmt.Sprintf("%s/passwd/res-req", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
