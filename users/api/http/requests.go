@@ -29,8 +29,8 @@ func (req viewUserInfoReq) validate() error {
 }
 
 type passwResetReq struct {
-	Email string
-	Host  string
+	Email string `json:"email,omitempty"`
+	Host  string `json:"host,omitempty"`
 }
 
 func (req passwResetReq) validate() error {
@@ -44,9 +44,9 @@ func (req passwResetReq) validate() error {
 }
 
 type resetTokenReq struct {
-	Token    string
-	Email    string
-	Password string
+	Token    string `json:"token,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 func (req resetTokenReq) validate() error {

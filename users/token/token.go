@@ -5,32 +5,29 @@
 package token
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/mainflux/mainflux/users/mail"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	emailLength   = 254
-	ttlLength     = 4
-	secretLength  = 20
-	tokenLength   = ttlLength + emailLength // Max token length is 4 bytes + max email length
-	hashCost      = 10
-	tokenDuration = 5                      // Recovery token TTL in minutes, reperesents token time to live
-	secret        = "fcERNb7KpM3WyAmguJMZ" // Random string for secret key, required for signing
+	emailLength      = 254
+	ttlLength        = 4
+	secretLength     = 20
+	tokenLength      = ttlLength + emailLength // Max token length is 4 bytes + max email length
+	hashCost         = 10
+	tokenDuration    = 5                              // Recovery token TTL in minutes, reperesents token time to live
+	hmacSampleSecret = []byte("fcERNb7KpM3WyAmguJMZ") // Random string for secret key, required for signing
 
-	// Errors
-	errMalformedToken  = errors.New("Malformed token")
-	errExpiredToken    = errors.New("Token expired")
-	errWrongSignature  = errors.New("Wrong token signature")
-	errTokenGeneration = errors.New("Token generation failed")
+	// ErrMalformedToken malformed token
+	ErrMalformedToken = errors.New("Malformed token")
+	// ErrExpiredToken  password reset token has expired
+	ErrExpiredToken = errors.New("Token expired")
+	// ErrWrongSignature wrong signature
+	ErrWrongSignature = errors.New("Wrong token signature")
 )
 
 // Generate generate new random token with defined TTL.
@@ -38,59 +35,49 @@ var (
 // useful for testing.
 func Generate(email string, offset int) (string, error) {
 
-	b := make([]byte, ttlLength+len(email))
 	exp := tokenDuration + offset
 	if exp < 0 {
 		exp = 0
 	}
 	expires := time.Now().Add(time.Minute * time.Duration(exp))
-	// Put TTL and email time.
-	binary.BigEndian.PutUint32(b, uint32(expires.Unix()))
-	copy(b[ttlLength:], []byte(email))
-	// hash the email part
-	s, err := getSignature([]byte(b[ttlLength:]), []byte(secret))
-	copy(b[ttlLength:], []byte(s))
-	if err != nil {
-		return "", errTokenGeneration
-	}
 
-	return base64.URLEncoding.EncodeToString(b), nil
+	// Create a new token object, specifying signing method and the claims
+	// you would like it to contain.
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"email": email,
+		"nbf":   expires.Unix(),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString(hmacSampleSecret)
+
+	return tokenString, err
 }
 
 // Verify verifies token validity
-func Verify(email, token string, hashed string) error {
-	blen := base64.URLEncoding.DecodedLen(len(token))
-	// Check max token length
-	if blen > tokenLength {
-		return errMalformedToken
-	}
+func Verify(email, tok string, hashed string) error {
 
-	b, err := base64.URLEncoding.DecodeString(token)
-	if err != nil {
-		return errMalformedToken
-	}
+	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, ErrWrongSignature
+		}
 
-	// Verify exparation time
-	ttl := time.Unix(int64(binary.BigEndian.Uint32(b[:ttlLength])), 0)
-	if ttl.Before(time.Now()) {
-		return errExpiredToken
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return hmacSampleSecret, nil
+	})
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		fmt.Println(claims["email"], claims["nbf"])
+		if claims.VerifyNotBefore(time.Now().Unix(), false) == false {
+			return ErrExpiredToken
+		}
+		if email != claims["email"] {
+			return ErrMalformedToken
+		}
+	} else {
+		fmt.Println(err)
 	}
-
-	// Compare token with stored hashed version
-	if err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(token)); err != nil {
-		return errWrongSignature
-	}
-
 	return nil
-}
-
-// HashToken hash's token value in order to save crypted token in DB
-func Hash(token string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(token), hashCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
 }
 
 // SendToken sends password recovery link to user
@@ -109,13 +96,4 @@ func buildBody(host, email, token string) []byte {
 		"%s/passwd/reset?token=%s", email, host, token))
 
 	return msg
-}
-
-// Hashing token with signature
-func getSignature(data []byte, signature []byte) ([]byte, error) {
-	keym := hmac.New(sha256.New, signature)
-	keym.Write(data)
-	m := hmac.New(sha256.New, keym.Sum(nil))
-	m.Write(data)
-	return m.Sum(nil), nil
 }

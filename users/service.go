@@ -74,17 +74,9 @@ type Service interface {
 	// Get authenticated user info for the given token.
 	UserInfo(ctx context.Context, token string) (User, error)
 
-	// SaveToken
-	SaveToken(_ context.Context, email, token string) error
-
-	// RetrieveToken
-	RetrieveToken(_ context.Context, email string) (string, error)
-
-	// DeleteToken
-	DeleteToken(_ context.Context, email string) error
-
-	// GenerateResetToken
-	GenerateResetToken(_ context.Context, email string) (string, error)
+	// GenerateResetToken email where mail will be sent.
+	// host is used for generating reset link.
+	GenerateResetToken(_ context.Context, email, host string) error
 
 	// ChangePassword
 	ChangePassword(_ context.Context, email, token, password string) error
@@ -153,46 +145,16 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 
 }
 
-func (svc usersService) SaveToken(ctx context.Context, email, tok string) error {
-
-	err := svc.users.SaveToken(ctx, email, tok)
-	if err != nil {
-		return err
-	}
-
-	return nil
-
-}
-
-func (svc usersService) RetrieveToken(ctx context.Context, email string) (string, error) {
-
-	token, err := svc.users.RetrieveToken(ctx, email)
-	if err != nil {
-		return "", ErrSavingRecoveryToken
-	}
-
-	return token, nil
-
-}
-
-func (svc usersService) DeleteToken(ctx context.Context, email string) error {
-
-	err := svc.users.DeleteToken(ctx, email)
-	if err != nil {
-		return ErrDeletingRecoveryToken
-	}
-
-	return nil
-
-}
-
-func (svc usersService) GenerateResetToken(_ context.Context, email string) (string, error) {
+func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
 
 	tok, err := token.Generate(email, 0)
 	if err != nil {
-		return "", ErrGeneratingResetToken
+		return ErrGeneratingResetToken
 	}
-	return tok, nil
+
+	token.SendToken(host, email, tok)
+
+	return nil
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
@@ -202,12 +164,7 @@ func (svc usersService) ChangePassword(ctx context.Context, email, tok, password
 		return ErrUserNotFound
 	}
 
-	retToken, err := svc.users.RetrieveToken(ctx, email)
-	if err != nil {
-		return err
-	}
-
-	err = token.Verify(email, tok, retToken)
+	err = token.Verify(email, tok, "")
 	if err != nil {
 		return err
 	}
