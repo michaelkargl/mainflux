@@ -286,3 +286,79 @@ func TestPasswordReset(t *testing.T) {
 
 	}
 }
+
+func TestPasswordReset(t *testing.T) {
+
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+	reqData := struct {
+		Email    string
+		Password string
+		Token    string
+	}{}
+	// this probably needs to be moved somwhere else
+	expected := struct {
+		Msg   string `json:"msg"`
+		Error string `json:"error"`
+	}{
+		"", // it would be good to use actuall error constant but it is private
+		"Token expired",
+	}
+
+	expectedExpired := toJSON(expected)
+
+	expected.Msg = ""
+	expected.Error = users.ErrUserNotFound.Error()
+	expectedNonExistent := toJSON(expected)
+
+	expected.Error = ""
+	expectedSucces := toJSON(expected)
+
+	svc.Register(context.Background(), user)
+	tok, _ := token.Generate(user.Email, 0)
+	svc.SaveToken(context.Background(), user.Email, tok)
+	tokExp, _ := token.Generate(user.Email, -5)
+
+	reqData.Email = user.Email
+	reqData.Password = user.Password
+	reqData.Token = tok
+	dataResExisting := toJSON(reqData)
+	reqData.Token = tokExp
+	dataResExpTok := toJSON(reqData)
+
+	reqData.Email = "non-existentuser@example.com"
+	dataResNonExisting := toJSON(reqData)
+
+	cases := []struct {
+		desc        string
+		req         string
+		contentType string
+		status      int
+		res         string
+		tok         string
+	}{
+		{"password reset with valid token and mail", dataResExisting, contentType, http.StatusOK, expectedSucces, tok},
+		{"password reset with invalid email", dataResNonExisting, contentType, http.StatusOK, expectedNonExistent, tok},
+		{"password reset expired token", dataResExpTok, contentType, http.StatusOK, expectedExpired, tokExp},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      client,
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/passwd/reset", ts.URL),
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.req),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		token := strings.Trim(string(body), "\n")
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.Equal(t, tc.res, token, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
+	}
+}
