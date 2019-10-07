@@ -174,7 +174,7 @@ func (svc usersService) UpdatePassword(ctx context.Context, email, password stri
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email string) (string, error) {
 
-	tok, err := token.Generate(email)
+	tok, err := token.Generate(email, 0)
 	if err != nil {
 		return "", ErrGeneratingResetToken
 	}
