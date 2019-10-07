@@ -77,46 +77,7 @@ func (lm *loggingMiddleware) UserInfo(ctx context.Context, key string) (u users.
 	return lm.svc.UserInfo(ctx, key)
 }
 
-func (lm *loggingMiddleware) SaveToken(ctx context.Context, email, token string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method save_token for user %s took %s to complete", email, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.SaveToken(ctx, email, token)
-}
-
-func (lm *loggingMiddleware) RetrieveToken(ctx context.Context, email string) (token string, err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method retrieve_token for user %s took %s to complete", email, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.RetrieveToken(ctx, email)
-}
-
-func (lm *loggingMiddleware) DeleteToken(ctx context.Context, email string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method user_info for user %s took %s to complete", email, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.DeleteToken(ctx, email)
-}
-
-func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email string) (token string, err error) {
+func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email, host string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method generate_reset_token for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
@@ -126,7 +87,7 @@ func (lm *loggingMiddleware) GenerateResetToken(ctx context.Context, email strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.GenerateResetToken(ctx, email)
+	return lm.svc.GenerateResetToken(ctx, email, host)
 }
 
 func (lm *loggingMiddleware) ChangePassword(ctx context.Context, email, token, password string) (err error) {

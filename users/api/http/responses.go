@@ -54,8 +54,7 @@ func (res identityRes) Empty() bool {
 }
 
 type resetPassRes struct {
-	Msg   string `json:"msg"`
-	Error string `json:"error"`
+	Msg string `json:"msg"`
 }
 
 func (res resetPassRes) Code() int {

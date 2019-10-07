@@ -11,7 +11,6 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/mainflux/mainflux/users"
-	"github.com/mainflux/mainflux/users/token"
 )
 
 var _ users.UserRepository = (*userRepository)(nil)
@@ -62,60 +61,12 @@ func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.
 	return user, nil
 }
 
-func (ur userRepository) SaveToken(_ context.Context, email, tok string) error {
-	t, err := ur.retrieveTokenByID(email)
-	if err != nil {
-		return users.ErrUserNotFound
-	}
-	q := `INSERT INTO tokens (user_id, token) VALUES (:email, :token )`
-	if len(t) > 0 {
-		q = `UPDATE tokens SET token = :token  WHERE user_id = :email`
-	}
-
-	hash, err := token.Hash(tok)
-	if err != nil {
-		return err
-	}
-	db := struct {
-		Email string
-		Token string
-	}{
-		email,
-		hash,
-	}
-
-	if _, err := ur.db.NamedExec(q, db); err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && errDuplicate == pqErr.Code.Name() {
-			return users.ErrConflict
-		}
-	}
-
-	return nil
-}
-
-func (ur userRepository) RetrieveToken(_ context.Context, email string) (string, error) {
-	return ur.retrieveTokenByID(email)
-}
-
-func (ur userRepository) DeleteToken(_ context.Context, email string) error {
-	q := `DELETE  FROM tokens WHERE email = $1`
-
-	if _, err := ur.db.NamedExec(q, email); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (ur userRepository) ChangePassword(_ context.Context, email, token, password string) error {
 	q := `UPDATE users SET  password = :password  WHERE email = :email`
 
-	db := struct {
-		Password string
-		Email    string
-	}{
-		password,
-		email,
+	db := dbUser{
+		Email:    email,
+		Password: password,
 	}
 
 	if _, err := ur.db.NamedExec(q, db); err != nil {

@@ -65,40 +65,13 @@ func (ms *metricsMiddleware) UserInfo(ctx context.Context, key string) (users.Us
 	return ms.svc.UserInfo(ctx, key)
 }
 
-func (ms *metricsMiddleware) SaveToken(ctx context.Context, email, token string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "save_token").Add(1)
-		ms.latency.With("method", "save_token").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.SaveToken(ctx, email, token)
-}
-
-func (ms *metricsMiddleware) RetrieveToken(ctx context.Context, email string) (string, error) {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "retrieve_token").Add(1)
-		ms.latency.With("method", "retrieve_token").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.RetrieveToken(ctx, email)
-}
-
-func (ms *metricsMiddleware) DeleteToken(ctx context.Context, email string) error {
-	defer func(begin time.Time) {
-		ms.counter.With("method", "retrieve_token").Add(1)
-		ms.latency.With("method", "retrieve_token").Observe(time.Since(begin).Seconds())
-	}(time.Now())
-
-	return ms.svc.DeleteToken(ctx, email)
-}
-
-func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email string) (string, error) {
+func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, host string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "generate_reset_token").Add(1)
 		ms.latency.With("method", "generate_reset_token").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.GenerateResetToken(ctx, email)
+	return ms.svc.GenerateResetToken(ctx, email, host)
 }
 
 func (ms *metricsMiddleware) ChangePassword(ctx context.Context, email, token, password string) error {

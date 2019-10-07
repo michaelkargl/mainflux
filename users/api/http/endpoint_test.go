@@ -211,7 +211,7 @@ func TestPasswordResetRequest(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/passwd/res-req", ts.URL),
+			url:         fmt.Sprintf("%s/password/request", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
@@ -286,8 +286,8 @@ func TestPasswordReset(t *testing.T) {
 	for _, tc := range cases {
 		req := testRequest{
 			client:      client,
-			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/passwd/reset", ts.URL),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/password", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
