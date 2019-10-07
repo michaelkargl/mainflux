@@ -6,6 +6,7 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mainflux/mainflux/users/token"
 )
@@ -187,7 +188,7 @@ func (svc usersService) DeleteToken(ctx context.Context, email string) error {
 
 func (svc usersService) GenerateResetToken(_ context.Context, email string) (string, error) {
 
-	tok, err := token.Generate(email)
+	tok, err := token.Generate(email, 0)
 	if err != nil {
 		return "", ErrGeneratingResetToken
 	}
@@ -197,6 +198,7 @@ func (svc usersService) GenerateResetToken(_ context.Context, email string) (str
 func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
 	u, err := svc.users.RetrieveByID(ctx, email)
 	if err != nil || u.Email == "" {
+		fmt.Println("err.Error()")
 		return ErrUserNotFound
 	}
 
