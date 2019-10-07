@@ -33,11 +33,17 @@ var (
 	errTokenGeneration = errors.New("Token generation failed")
 )
 
-// Generate generate new random token with defined TTL
-func Generate(email string) (string, error) {
+// Generate generate new random token with defined TTL.
+// offset can be used to manipulate token validity in time
+// useful for testing.
+func Generate(email string, offset int) (string, error) {
 
 	b := make([]byte, ttlLength+len(email))
-	expires := time.Now().Add(time.Minute * time.Duration(tokenDuration))
+	exp := tokenDuration + offset
+	if exp < 0 {
+		exp = 0
+	}
+	expires := time.Now().Add(time.Minute * time.Duration(exp))
 	// Put TTL and email time.
 	binary.BigEndian.PutUint32(b, uint32(expires.Unix()))
 	copy(b[ttlLength:], []byte(email))
@@ -64,15 +70,17 @@ func Verify(email, token string, hashed string) error {
 		return errMalformedToken
 	}
 
-	// Compare token with stored hashed version
-	if err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(token)); err != nil {
-		return errWrongSignature
-	}
 	// Verify exparation time
 	ttl := time.Unix(int64(binary.BigEndian.Uint32(b[:ttlLength])), 0)
 	if ttl.Before(time.Now()) {
 		return errExpiredToken
 	}
+
+	// Compare token with stored hashed version
+	if err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(token)); err != nil {
+		return errWrongSignature
+	}
+
 	return nil
 }
 
