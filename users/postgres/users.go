@@ -64,7 +64,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.
 
 func (ur userRepository) SaveToken(_ context.Context, email, tok string) error {
 	t, err := ur.retrieveTokenByID(email)
-	if err != nil || t == "" {
+	if err != nil {
 		return users.ErrUserNotFound
 	}
 	q := `INSERT INTO tokens (user_id, token) VALUES (:email, :token )`
