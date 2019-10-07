@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/users"
-	"github.com/mainflux/mainflux/users/token"
 )
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
@@ -26,31 +25,22 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 
 // Password reset endpoint serves post request with email of the user
 // for whom password reset flow is to be initiated.
-// If request is succsesfull email with reset link will be sent to the
+// If request is successful email with reset link will be sent to the
 // email specified in the request.
 // Link contains token that has TTL that needs to be verified.
-// When user gets email with reset password link this endpoint can serve
-// that request and return response into the ui form which than can
-// be used to enter email and new password and then request can be submited
+// When user gets email with reset password link that hits this endpoint
+// which will return response into the ui form which then can
+// be used to enter email and new password and then request can be submitted
 // to the post endpoint which actually changes password.
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)
 		res := resetPassRes{}
 		email := req.Email
-		tok, err := svc.GenerateResetToken(ctx, email)
+		err := svc.GenerateResetToken(ctx, email, req.Host)
 		if err != nil {
-			res.Error = err.Error()
-			return res, err
+			res.Msg = err.Error()
 		}
-
-		err = svc.SaveToken(ctx, email, tok)
-		if err != nil {
-			res.Error = err.Error()
-			return res, nil
-		}
-		token.SendToken(req.Host, email, tok)
-		res.Msg = MailSent
 		return res, nil
 	}
 }
@@ -58,16 +48,16 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 // This is post request endpoint that actually sets new password. It requires a token
 // generated in the password reset request endpoint.
 // Token is verified for the TTL and against generated token saved in DB.
-func passwordResetPostEndpoint(svc users.Service) endpoint.Endpoint {
+func passwordResetPatchEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resetTokenReq)
 		res := resetPassRes{}
 		err := svc.ChangePassword(ctx, req.Email, req.Token, req.Password)
 		if err != nil {
-			res.Error = err.Error()
+			res.Msg = err.Error()
 			return res, nil
 		}
-		res.Error = ""
+		res.Msg = ""
 		return res, nil
 	}
 }
