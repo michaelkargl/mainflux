@@ -17,23 +17,23 @@ var (
 	ErrConflict = errors.New("email already taken")
 
 	// ErrMalformedEntity indicates malformed entity specification (e.g.
-	// invalid username or password).
+	// invalid username or password)
 	ErrMalformedEntity = errors.New("malformed entity specification")
 
 	// ErrUnauthorizedAccess indicates missing or invalid credentials provided
-	// when accessing a protected resource.
+	// when accessing a protected resource
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
 
-	// ErrNotFound indicates a non-existent entity request.
+	// ErrNotFound indicates a non-existent entity request
 	ErrNotFound = errors.New("non-existent entity")
 
-	// ErrUserNotFound indicates a non-existent user request.
+	// ErrUserNotFound indicates a non-existent user request
 	ErrUserNotFound = errors.New("non-existent user")
 
 	// ErrScanMetadata indicates problem with metadata in db
 	ErrScanMetadata = errors.New("Failed to scan metadata")
 
-	// ErrMissingEmail indicates missing email for password reset request.
+	// ErrMissingEmail indicates missing email for password reset request
 	ErrMissingEmail = errors.New("missing email for password reset")
 
 	// ErrSavingRecoveryToken indicates error saving recovery token
@@ -46,11 +46,11 @@ var (
 	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
 
 	// ErrMisingResetToken indicates malformed or missing reset token
-	// for reseting password.
+	// for reseting password
 	ErrMisingResetToken = errors.New("error mising reset token")
 
 	// ErrGeneratingResetToken indicates error in generating password recovery
-	// token.
+	// token
 	ErrGeneratingResetToken = errors.New("error mising reset token")
 )
 
@@ -71,14 +71,14 @@ type Service interface {
 	// other reason, non-nil error values are returned in response.
 	Identify(string) (string, error)
 
-	// Get authenticated user info for the given token.
+	// Get authenticated user info for the given token
 	UserInfo(ctx context.Context, token string) (User, error)
 
 	// GenerateResetToken email where mail will be sent.
 	// host is used for generating reset link.
 	GenerateResetToken(_ context.Context, email, host string) error
 
-	// ChangePassword
+	// ChangePassword change users password
 	ChangePassword(_ context.Context, email, token, password string) error
 }
 
@@ -90,7 +90,7 @@ type usersService struct {
 	idp    IdentityProvider
 }
 
-// New instantiates the users service implementation.
+// New instantiates the users service implementation
 func New(users UserRepository, hasher Hasher, idp IdentityProvider) Service {
 	return &usersService{users: users, hasher: hasher, idp: idp}
 }
