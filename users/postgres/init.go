@@ -59,11 +59,6 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "users_2",
 				Up: []string{
 					`ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS metadata JSONB`,
-					`CREATE TABLE IF NOT EXISTS tokens (
-						user_id    VARCHAR(254),
-						token	 VARCHAR(254),
-						FOREIGN KEY (user_id) REFERENCES users (email) ON DELETE CASCADE ON UPDATE CASCADE
-					)`,
 				},
 			},
 		},
