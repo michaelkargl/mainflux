@@ -34,6 +34,16 @@ default values.
 | MF_USERS_SERVER_KEY       | Path to server key in pem format                                        |                |
 | MF_USERS_SECRET           | String used for signing tokens                                          | users          |
 | MF_JAEGER_URL             | Jaeger server URL                                                       | localhost:6831 |
+| MF_MAIL_DRIVER            | Mail server driver, mail server for sending reset password token        | smtp           |
+| MF_MAIL_HOST              | Mail server host                                                        | localhost      |
+| MF_MAIL_PORT              | Mail server port                                                        | 25             |
+| MF_MAIL_USERNAME          | Mail server username                                                    |                |
+| MF_MAIL_PASSWORD          | Mail server password                                                    |                |
+| MF_MAIL_FROM_ADDRESS      | Mail "from" address                                                     |                |
+| MF_MAIL_FROM_NAME         | Mail "from" name                                                        |                |
+| MF_TOKEN_SECRET           | Token secret for signing token used for password reset                  |                |
+| MF_TOKEN_DURATION         | Token duration in minutes                                               | 5              |
+| MF_TOKEN_DEBUG_LEVEL      | Token util debug level                                                  | info           |
 
 ## Deployment
 
