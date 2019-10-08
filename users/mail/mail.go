@@ -12,21 +12,14 @@ import (
 )
 
 const (
-	defMailLogLevel = "debug"
-	defMailDriver   = "smtp"
-	// defMailHost        = "localhost"
-	// defMailPort        = "25"
-	// defMailUsername    = "root"
-	// defMailPassword    = ""
-	// defMailFromAddress = ""
-	// defMailFromName    = ""
-
-	defMailHost        = "smtp.mailtrap.io"
-	defMailPort        = "2525"
-	defMailUsername    = "18bf7f70705139"
-	defMailPassword    = "2b0d302e775b1e"
-	defMailFromAddress = "from@example.com"
-	defMailFromName    = "Example"
+	defMailLogLevel    = "debug"
+	defMailDriver      = "smtp"
+	defMailHost        = "localhost"
+	defMailPort        = "25"
+	defMailUsername    = "root"
+	defMailPassword    = ""
+	defMailFromAddress = ""
+	defMailFromName    = ""
 
 	envMailDriver      = "MF_MAIL_DRIVER"
 	envMailHost        = "MF_MAIL_HOST"
@@ -74,7 +67,7 @@ func instance() *agent {
 			password:    mainflux.Env(envMailPassword, defMailPassword),
 		}
 
-		// Set up authentication information.
+		// Set up authentication information
 		a.auth = smtp.PlainAuth("", a.conf.username, a.conf.password, a.conf.host)
 		a.addr = fmt.Sprintf("%s:%s", a.conf.host, a.conf.port)
 
@@ -89,7 +82,7 @@ func instance() *agent {
 	return a
 }
 
-// Send sends mail.
+// Send sends e-mail
 func Send(to []string, msg []byte) {
 	go func() {
 		a := instance()

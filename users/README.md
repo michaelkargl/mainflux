@@ -66,6 +66,16 @@ services:
       MF_USERS_SERVER_CERT: [String path to server certificate in pem format]
       MF_USERS_SERVER_KEY: [String path to server key in pem format]
       MF_JAEGER_URL: [Jaeger server URL]
+      MF_MAIL_DRIVER: [Mail server driver smtp]
+      MF_MAIL_HOST: [MF_MAIL_HOST]
+      MF_MAIL_PORT: [MF_MAIL_PORT]
+      MF_MAIL_USERNAME: [MF_MAIL_USERNAME]
+      MF_MAIL_PASSWORD: [MF_MAIL_PASSWORD]
+      MF_MAIL_FROM_ADDRESS: [MF_MAIL_FROM_ADDRESS]
+      MF_MAIL_FROM_NAME: [MF_MAIL_FROM_NAME]
+      MF_TOKEN_SECRET: [MF_TOKEN_SECRET]
+      MF_TOKEN_DURATION: [MF_TOKEN_DURATION]
+      MF_TOKEN_DEBUG_LEVEL: [MF_TOKEN_DEBUG_LEVEL]
 ```
 
 To start the service outside of the container, execute the following shell script:

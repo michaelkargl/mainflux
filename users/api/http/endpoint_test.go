@@ -231,7 +231,6 @@ func TestPasswordResetRequest(t *testing.T) {
 }
 
 func TestPasswordReset(t *testing.T) {
-
 	svc := newService()
 	ts := newServer(svc)
 	defer ts.Close()
@@ -289,7 +288,7 @@ func TestPasswordReset(t *testing.T) {
 		res         string
 		tok         string
 	}{
-		{"password reset with token not valid token and mail", dataResExisting, contentType, http.StatusOK, expectedNotValidYet, tok},
+		{"password reset with token not yet valid", dataResExisting, contentType, http.StatusOK, expectedNotValidYet, tok},
 		{"password reset with valid token and mail", dataResExisting, contentType, http.StatusOK, expectedSuccess, tok},
 		{"password reset with invalid email", dataResNonExisting, contentType, http.StatusOK, expectedNonExistent, tok},
 		{"password reset expired token", dataResExpTok, contentType, http.StatusOK, expectedExpired, tokExp},
