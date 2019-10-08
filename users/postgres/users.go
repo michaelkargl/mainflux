@@ -61,7 +61,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.
 	return user, nil
 }
 
-func (ur userRepository) ChangePassword(_ context.Context, email, token, password string) error {
+func (ur userRepository) ChangePassword(ctx context.Context, email, token, password string) error {
 	q := `UPDATE users SET  password = :password  WHERE email = :email`
 
 	db := dbUser{
@@ -69,25 +69,11 @@ func (ur userRepository) ChangePassword(_ context.Context, email, token, passwor
 		Password: password,
 	}
 
-	if _, err := ur.db.NamedExec(q, db); err != nil {
+	if _, err := ur.db.NamedExecContext(ctx, q, db); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (ur userRepository) retrieveTokenByID(email string) (string, error) {
-	q := `SELECT token from tokens WHERE user_id = $1`
-
-	t := ""
-	if err := ur.db.QueryRowx(q, email).Scan(&t); err != nil {
-		if err == sql.ErrNoRows {
-			return t, nil
-		}
-		return t, err
-	}
-
-	return t, nil
 }
 
 // dbMetadata type for handling metadata properly in database/sql
