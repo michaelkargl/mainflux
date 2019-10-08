@@ -94,7 +94,7 @@ func (t *tokenizer) generate(email string, offset int) (string, error) {
 	nbf := time.Now().Add(time.Second * 10)
 
 	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
+	// you would like it to contain
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": email,
 		"exp":   expires.Unix(),

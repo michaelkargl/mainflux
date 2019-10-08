@@ -15,10 +15,8 @@ var (
 	_ mainflux.Response = (*resetPassRes)(nil)
 )
 
-// MailSent message response when link is sent.
-const (
-	MailSent = "Mail with reset link is sent"
-)
+// MailSent message response when link is sent
+const MailSent = "Mail with reset link is sent"
 
 type tokenRes struct {
 	Token string `json:"token,omitempty"`
@@ -58,7 +56,7 @@ type resetPassRes struct {
 }
 
 func (res resetPassRes) Code() int {
-	return http.StatusOK
+	return http.StatusCreated
 }
 
 func (res resetPassRes) Headers() map[string]string {
