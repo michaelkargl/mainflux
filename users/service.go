@@ -147,6 +147,11 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 
 func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
 
+	user, err := svc.users.RetrieveByID(ctx, email)
+	if err != nil || user.Email == "" {
+		return ErrUserNotFound
+	}
+
 	tok, err := token.Generate(email, 0)
 	if err != nil {
 		return ErrGeneratingResetToken
