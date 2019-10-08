@@ -10,7 +10,7 @@ import (
 var email = "johnsnow@gmai.com"
 
 func TestGenerate(t *testing.T) {
-	hash, err := token.Generate(email)
+	hash, err := token.Generate(email, 0)
 	if err != nil {
 		t.Errorf("Token generation failed.")
 	}
@@ -18,18 +18,14 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
-	tok, err := token.Generate(email)
+	tok, err := token.Generate(email, 0)
 	if err != nil {
-		t.Errorf("Token generation faild.")
-	}
-	hashed, err := token.Hash(tok)
-	if err != nil {
-		t.Errorf("Token Hashing faild.")
+		t.Errorf("Token generation failed.")
 	}
 
-	if err := token.Verify(email, tok, hashed); err != nil {
+	if err := token.Verify(email, tok, ""); err != nil {
 		fmt.Println("Here is a error:", err)
-		t.Errorf("Token verification faild.")
+		t.Errorf("Token verification failed.")
 	}
 
 }
@@ -39,7 +35,7 @@ func TestHash(t *testing.T) {
 }
 
 func TestSend(t *testing.T) {
-	hash, err := token.Generate(email)
+	hash, err := token.Generate(email, 0)
 	if err != nil {
 		t.Errorf("Token generation failed.")
 	}

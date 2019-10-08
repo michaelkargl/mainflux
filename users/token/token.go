@@ -7,55 +7,108 @@ package token
 import (
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/mainflux/mainflux"
+	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users/mail"
 )
 
 var (
-	emailLength      = 254
-	ttlLength        = 4
-	secretLength     = 20
-	tokenLength      = ttlLength + emailLength // Max token length is 4 bytes + max email length
-	hashCost         = 10
-	tokenDuration    = 5                              // Recovery token TTL in minutes, reperesents token time to live
-	hmacSampleSecret = []byte("fcERNb7KpM3WyAmguJMZ") // Random string for secret key, required for signing
 
 	// ErrMalformedToken malformed token
 	ErrMalformedToken = errors.New("Malformed token")
 	// ErrExpiredToken  password reset token has expired
-	ErrExpiredToken = errors.New("Token expired")
+	ErrExpiredToken = errors.New("Token is expired")
 	// ErrWrongSignature wrong signature
 	ErrWrongSignature = errors.New("Wrong token signature")
 )
+
+const (
+	defTokenSecret   = "mainflux-secret"
+	defTokenDuration = "5"
+	defTokenLogLevel = "debug"
+
+	envTokenSecret   = "MF_TOKEN_SECRET"
+	envTokenDuration = "MF_TOKEN_DURATION"
+	envTokenLogLevel = "MF_TOKEN_DEBUG_LEVEL"
+)
+
+var once sync.Once
+
+type tokenizer struct {
+	hmacSampleSecret []byte // secret for sigining token
+	tokenDuration    int    //token in duration in min
+	logger           logger.Logger
+}
+
+var t *tokenizer
+
+// Agent - Thread safe creation of mail agent
+func instance() *tokenizer {
+	once.Do(func() {
+		t = &tokenizer{}
+		t.hmacSampleSecret = []byte(mainflux.Env(envTokenSecret, defTokenSecret))
+		t.tokenDuration, _ = strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
+
+		logLevel := mainflux.Env(envTokenLogLevel, defTokenLogLevel)
+		logger, err := logger.New(os.Stdout, logLevel)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		t.logger = logger
+	})
+	return t
+}
 
 // Generate generate new random token with defined TTL.
 // offset can be used to manipulate token validity in time
 // useful for testing.
 func Generate(email string, offset int) (string, error) {
+	return instance().generate(email, offset)
+}
 
-	exp := tokenDuration + offset
+// Verify verifies token validity
+func Verify(email, tok string, hashed string) error {
+	return instance().verify(email, tok, hashed)
+}
+
+// SendToken sends password recovery link to user
+func SendToken(host, email, token string) {
+	instance().sendToken(host, email, token)
+}
+
+func (t *tokenizer) generate(email string, offset int) (string, error) {
+
+	exp := t.tokenDuration + offset
 	if exp < 0 {
 		exp = 0
 	}
 	expires := time.Now().Add(time.Minute * time.Duration(exp))
+	nbf := time.Now().Add(time.Second * 10)
 
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": email,
-		"nbf":   expires.Unix(),
+		"exp":   expires.Unix(),
+		"nbf":   nbf.Unix(),
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString(hmacSampleSecret)
-
+	tokenString, err := token.SignedString(t.hmacSampleSecret)
+	fmt.Println(tokenString)
 	return tokenString, err
 }
 
 // Verify verifies token validity
-func Verify(email, tok string, hashed string) error {
+func (t *tokenizer) verify(email, tok string, hashed string) error {
 
 	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
@@ -64,24 +117,24 @@ func Verify(email, tok string, hashed string) error {
 		}
 
 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return hmacSampleSecret, nil
+		return t.hmacSampleSecret, nil
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		fmt.Println(claims["email"], claims["nbf"])
-		if claims.VerifyNotBefore(time.Now().Unix(), false) == false {
+		if claims.VerifyExpiresAt(time.Now().Unix(), false) == false {
 			return ErrExpiredToken
 		}
 		if email != claims["email"] {
 			return ErrMalformedToken
 		}
 	} else {
-		fmt.Println(err)
+		return err
 	}
 	return nil
 }
 
 // SendToken sends password recovery link to user
-func SendToken(host, email, token string) {
+func (t *tokenizer) sendToken(host, email, token string) {
 	body := buildBody(host, email, token)
 	mail.Send([]string{email}, body)
 }

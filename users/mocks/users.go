@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/mainflux/mainflux/users"
-	tok "github.com/mainflux/mainflux/users/token"
 )
 
 var _ users.UserRepository = (*userRepositoryMock)(nil)
@@ -49,36 +48,6 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, email string) (
 	}
 
 	return val, nil
-}
-func (urm *userRepositoryMock) SaveToken(_ context.Context, email, token string) error {
-	urm.mu.Lock()
-	defer urm.mu.Unlock()
-
-	if _, ok := urm.tokens[email]; ok {
-		return users.ErrConflict
-	}
-	t, _ := tok.Hash(token)
-	urm.tokens[email] = t
-	return nil
-}
-
-// RetrieveToken
-func (urm *userRepositoryMock) RetrieveToken(_ context.Context, email string) (string, error) {
-
-	urm.mu.Lock()
-	defer urm.mu.Unlock()
-
-	val, ok := urm.tokens[email]
-	if !ok {
-		return "", users.ErrNotFound
-	}
-
-	return val, nil
-}
-
-// DeleteToken
-func (urm *userRepositoryMock) DeleteToken(_ context.Context, email string) error {
-	return nil
 }
 
 // ChangePassword

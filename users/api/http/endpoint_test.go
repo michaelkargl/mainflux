@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users"
@@ -178,22 +179,25 @@ func TestPasswordResetRequest(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-	expected := struct {
-		Msg   string `json:"msg"`
-		Error string `json:"error"`
-	}{
-		httpapi.MailSent,
-		"",
-	}
 	data := toJSON(user)
-	expectedExisting := toJSON(expected)
+
 	nonexistentData := toJSON(users.User{
 		Email:    "non-existentuser@example.com",
 		Password: "pass",
 	})
-	expected.Msg = ""
-	expected.Error = users.ErrUserNotFound.Error()
-	expectedNonExistent := toJSON(expected)
+
+	expectedExisting := toJSON(struct {
+		Msg string `json:"msg"`
+	}{
+		httpapi.MailSent,
+	})
+
+	expectedNonExistent := toJSON(struct {
+		Msg string `json:"msg"`
+	}{
+		users.ErrUserNotFound.Error(),
+	})
+
 	svc.Register(context.Background(), user)
 
 	cases := []struct {
@@ -211,7 +215,7 @@ func TestPasswordResetRequest(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/password/request", ts.URL),
+			url:         fmt.Sprintf("%s/password/reset", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
@@ -237,33 +241,40 @@ func TestPasswordReset(t *testing.T) {
 		Password string
 		Token    string
 	}{}
-	// this probably needs to be moved somwhere else
-	expected := struct {
-		Msg   string `json:"msg"`
-		Error string `json:"error"`
+
+	expectedExpired := toJSON(struct {
+		Msg string `json:"msg"`
 	}{
-		"", // it would be good to use actuall error constant but it is private
-		"Token expired",
-	}
+		token.ErrExpiredToken.Error(),
+	})
 
-	expectedExpired := toJSON(expected)
+	expectedNonExistent := toJSON(struct {
+		Msg string `json:"msg"`
+	}{
+		users.ErrUserNotFound.Error(),
+	})
 
-	expected.Msg = ""
-	expected.Error = users.ErrUserNotFound.Error()
-	expectedNonExistent := toJSON(expected)
+	expectedSuccess := toJSON(struct {
+		Msg string `json:"msg"`
+	}{
+		"",
+	})
 
-	expected.Error = ""
-	expectedSucces := toJSON(expected)
+	expectedNotValidYet := toJSON(struct {
+		Msg string `json:"msg"`
+	}{
+		"Token is not valid yet",
+	})
 
 	svc.Register(context.Background(), user)
 	tok, _ := token.Generate(user.Email, 0)
-	svc.SaveToken(context.Background(), user.Email, tok)
 	tokExp, _ := token.Generate(user.Email, -5)
 
 	reqData.Email = user.Email
 	reqData.Password = user.Password
 	reqData.Token = tok
 	dataResExisting := toJSON(reqData)
+
 	reqData.Token = tokExp
 	dataResExpTok := toJSON(reqData)
 
@@ -278,11 +289,13 @@ func TestPasswordReset(t *testing.T) {
 		res         string
 		tok         string
 	}{
-		{"password reset with valid token and mail", dataResExisting, contentType, http.StatusOK, expectedSucces, tok},
+		{"password reset with token not valid token and mail", dataResExisting, contentType, http.StatusOK, expectedNotValidYet, tok},
+		{"password reset with valid token and mail", dataResExisting, contentType, http.StatusOK, expectedSuccess, tok},
 		{"password reset with invalid email", dataResNonExisting, contentType, http.StatusOK, expectedNonExistent, tok},
 		{"password reset expired token", dataResExpTok, contentType, http.StatusOK, expectedExpired, tokExp},
 	}
 
+	first := false
 	for _, tc := range cases {
 		req := testRequest{
 			client:      client,
@@ -291,6 +304,7 @@ func TestPasswordReset(t *testing.T) {
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
+
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		body, err := ioutil.ReadAll(res.Body)
@@ -299,5 +313,9 @@ func TestPasswordReset(t *testing.T) {
 
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.Equal(t, tc.res, token, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
+		if first == false {
+			time.Sleep(10 * time.Second)
+			first = true
+		}
 	}
 }
