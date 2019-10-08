@@ -138,7 +138,7 @@ paths:
           $ref: "#/responses/ServiceError"        
 responses:
   ServiceError:
-    description: Unexpected server-side error occured.
+    description: Unexpected server-side error occurred.
 definitions:
   Token:
     type: object
@@ -184,7 +184,7 @@ parameters:
 
 responses:
   ServiceError:
-    description: Unexpected server-side error occured.
+    description: Unexpected server-side error occurred.
 
 definitions:
   UsersPage:
