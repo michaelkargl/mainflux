@@ -56,15 +56,15 @@ type agent struct {
 	log  logger.Logger
 }
 
-var instance *agent
+var a *agent
 var once sync.Once
 
 // Agent - Thread safe creation of mail agent
-func initAgent() *agent {
+func instance() *agent {
 	once.Do(func() {
-		instance = &agent{}
+		a = &agent{}
 
-		instance.conf = mail{
+		a.conf = mail{
 			driver:      mainflux.Env(envMailDriver, defMailDriver),
 			fromAddress: mainflux.Env(envMailFromAddress, defMailFromAddress),
 			fromName:    mainflux.Env(envMailFromName, defMailFromName),
@@ -75,8 +75,8 @@ func initAgent() *agent {
 		}
 
 		// Set up authentication information.
-		instance.auth = smtp.PlainAuth("", instance.conf.username, instance.conf.password, instance.conf.host)
-		instance.addr = fmt.Sprintf("%s:%s", instance.conf.host, instance.conf.port)
+		a.auth = smtp.PlainAuth("", a.conf.username, a.conf.password, a.conf.host)
+		a.addr = fmt.Sprintf("%s:%s", a.conf.host, a.conf.port)
 
 		logLevel := mainflux.Env(envMailLogLevel, defMailLogLevel)
 		logger, err := logger.New(os.Stdout, logLevel)
@@ -84,15 +84,15 @@ func initAgent() *agent {
 			log.Fatalf(err.Error())
 		}
 
-		instance.log = logger
+		a.log = logger
 	})
-	return instance
+	return a
 }
 
 // Send sends mail.
 func Send(to []string, msg []byte) {
 	go func() {
-		a := initAgent()
+		a := instance()
 		err := smtp.SendMail(a.addr, a.auth, a.conf.fromAddress, to, msg)
 		if err != nil {
 			a.log.Error(fmt.Sprintf("Failed to send mail:%s", err.Error()))
