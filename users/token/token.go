@@ -57,12 +57,12 @@ func instance() *tokenizer {
 		t.tokenDuration, _ = strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
 
 		logLevel := mainflux.Env(envTokenLogLevel, defTokenLogLevel)
-		logger, err := logger.New(os.Stdout, logLevel)
+		l, err := logger.New(os.Stdout, logLevel)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
 
-		t.logger = logger
+		t.logger = l
 	})
 	return t
 }
@@ -113,6 +113,7 @@ func (t *tokenizer) verify(email, tok string, hashed string) error {
 	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			t.logger.Error(ErrWrongSignature.Error())
 			return nil, ErrWrongSignature
 		}
 
@@ -122,9 +123,11 @@ func (t *tokenizer) verify(email, tok string, hashed string) error {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		fmt.Println(claims["email"], claims["nbf"])
 		if claims.VerifyExpiresAt(time.Now().Unix(), false) == false {
+			t.logger.Error(ErrExpiredToken.Error())
 			return ErrExpiredToken
 		}
 		if email != claims["email"] {
+			t.logger.Error("mail not matching token")
 			return ErrMalformedToken
 		}
 	} else {
