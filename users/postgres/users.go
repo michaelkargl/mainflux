@@ -61,11 +61,7 @@ func (ur userRepository) RetrieveByID(ctx context.Context, email string) (users.
 	return user, nil
 }
 
-<<<<<<< HEAD
 func (ur userRepository) UpdatePassword(ctx context.Context, email, password string) error {
-=======
-func (ur userRepository) ChangePassword(_ context.Context, email, token, password string) error {
->>>>>>> change token generation
 	q := `UPDATE users SET  password = :password  WHERE email = :email`
 
 	db := dbUser{
