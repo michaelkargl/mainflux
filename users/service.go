@@ -171,28 +171,3 @@ func (svc usersService) UpdatePassword(ctx context.Context, email, password stri
 	err = svc.users.UpdatePassword(ctx, email, password)
 	return err
 }
-
-func (svc usersService) GenerateResetToken(ctx context.Context, email string) (string, error) {
-
-	tok, err := token.Generate(email, 0)
-	if err != nil {
-		return "", ErrGeneratingResetToken
-	}
-	return tok, nil
-}
-
-func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
-	u, err := svc.users.RetrieveByID(ctx, email)
-	if err != nil {
-		return ErrNotFound
-	}
-
-	retToken, err := svc.users.RetrieveToken(ctx, email)
-	token.Verify(tok, retToken)
-	if err != nil {
-		return ErrDeletingRecoveryToken
-	}
-
-	return nil
-
-}

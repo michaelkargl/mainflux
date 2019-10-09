@@ -21,14 +21,14 @@ const (
 	defMailFromAddress = ""
 	defMailFromName    = ""
 
-	envMailDriver      = "MF_EMAIL_DRIVER"
-	envMailHost        = "MF_EMAIL_HOST"
-	envMailPort        = "MF_EMAIL_PORT"
-	envMailUsername    = "MF_EMAIL_USERNAME"
-	envMailPassword    = "MF_EMAIL_PASSWORD"
-	envMailFromAddress = "MF_EMAIL_FROM_ADDRESS"
-	envMailFromName    = "MF_EMAIL_FROM_NAME"
-	envMailLogLevel    = "MF_EMAIL_LOG_LEVEL"
+	envMailDriver      = "MF_MAIL_DRIVER"
+	envMailHost        = "MF_MAIL_HOST"
+	envMailPort        = "MF_MAIL_PORT"
+	envMailUsername    = "MF_MAIL_USERNAME"
+	envMailPassword    = "MF_MAIL_PASSWORD"
+	envMailFromAddress = "MF_MAIL_FROM_ADDRESS"
+	envMailFromName    = "MF_MAIL_FROM_NAME"
+	envMailLogLevel    = "MF_MAIL_LOG_LEVEL"
 )
 
 type mail struct {
