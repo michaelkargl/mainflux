@@ -70,9 +70,9 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 		opts...,
 	))
 
-	mux.Put("/password/change", kithttp.NewServer(
+	mux.Patch("/password", kithttp.NewServer(
 		kitot.TraceServer(tracer, "reset")(passwordChangeEndpoint(svc)),
-		decodePasswordReset,
+		decodePasswordChange,
 		encodeResponse,
 		opts...,
 	))
@@ -146,6 +146,23 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 		logger.Warn(fmt.Sprintf("Failed to decode reset request: %s", err))
 		return nil, err
 	}
+
+	return req, nil
+}
+
+func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		logger.Warn("Invalid or missing content type.")
+		return nil, errUnsupportedContentType
+	}
+
+	var req passwChangeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(fmt.Sprintf("Failed to decode reset request: %s", err))
+		return nil, err
+	}
+
+	req.Token = r.Header.Get("Authorization")
 
 	return req, nil
 }

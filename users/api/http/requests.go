@@ -68,7 +68,7 @@ func (req resetTokenReq) validate() error {
 type passwChangeReq struct {
 	Token       string `json:"token,omitempty"`
 	Password    string `json:"password,omitempty"`
-	OldPassword string `json:"old_password",omitempty`
+	OldPassword string `json:"oldPassword,omitempty"`
 }
 
 func (req passwChangeReq) validate() error {
