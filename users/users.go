@@ -45,8 +45,8 @@ type UserRepository interface {
 	// RetrieveByID retrieves user by its unique identifier (i.e. email).
 	RetrieveByID(context.Context, string) (User, error)
 
-	// ChangePassword
-	ChangePassword(_ context.Context, email, token, password string) error
+	// UpdatePassword(
+	UpdatePassword(_ context.Context, email, password string) error
 }
 
 func isEmail(email string) bool {

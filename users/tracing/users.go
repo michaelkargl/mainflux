@@ -16,7 +16,7 @@ const (
 	saveOp             = "save_op"
 	retrieveByIDOp     = "retrieve_by_id"
 	generateResetToken = "generate_reset_token"
-	changePassword     = "change_password"
+	updatePassword     = "update_password"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)
@@ -51,12 +51,12 @@ func (urm userRepositoryMiddleware) RetrieveByID(ctx context.Context, id string)
 	return urm.repo.RetrieveByID(ctx, id)
 }
 
-func (urm userRepositoryMiddleware) ChangePassword(ctx context.Context, email, token, password string) error {
-	span := createSpan(ctx, urm.tracer, changePassword)
+func (urm userRepositoryMiddleware) UpdatePassword(ctx context.Context, email, password string) error {
+	span := createSpan(ctx, urm.tracer, updatePassword)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.ChangePassword(ctx, email, token, password)
+	return urm.repo.UpdatePassword(ctx, email, password)
 }
 
 func createSpan(ctx context.Context, tracer opentracing.Tracer, opName string) opentracing.Span {

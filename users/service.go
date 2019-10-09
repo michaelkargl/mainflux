@@ -6,7 +6,6 @@ package users
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/mainflux/mainflux/users/token"
 )
@@ -45,9 +44,9 @@ var (
 	// ErrRetrievingRecoveryToken indicates error deleting recovery token
 	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
 
-	// ErrMisingResetToken indicates malformed or missing reset token
+	// ErrMissingResetToken indicates malformed or missing reset token
 	// for reseting password
-	ErrMisingResetToken = errors.New("error mising reset token")
+	ErrMissingResetToken = errors.New("error mising reset token")
 
 	// ErrGeneratingResetToken indicates error in generating password recovery
 	// token
@@ -78,8 +77,8 @@ type Service interface {
 	// host is used for generating reset link.
 	GenerateResetToken(_ context.Context, email, host string) error
 
-	// ChangePassword change users password
-	ChangePassword(_ context.Context, email, token, password string) error
+	// UpdatePassword change users password in reset flow
+	UpdatePassword(_ context.Context, email, password string) error
 }
 
 var _ Service = (*usersService)(nil)
@@ -162,23 +161,17 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 	return nil
 }
 
-func (svc usersService) ChangePassword(ctx context.Context, email, tok, password string) error {
+func (svc usersService) UpdatePassword(ctx context.Context, email, password string) error {
 	u, err := svc.users.RetrieveByID(ctx, email)
 	if err != nil || u.Email == "" {
-		fmt.Println("err.Error()")
 		return ErrUserNotFound
-	}
-
-	err = token.Verify(email, tok, "")
-	if err != nil {
-		return err
 	}
 
 	password, err = svc.hasher.Hash(password)
 	if err != nil {
 		return err
 	}
-	err = svc.users.ChangePassword(ctx, email, tok, password)
+	err = svc.users.UpdatePassword(ctx, email, password)
 	return err
 
 }

@@ -75,8 +75,8 @@ func Generate(email string, offset int) (string, error) {
 }
 
 // Verify verifies token validity
-func Verify(email, tok string, hashed string) error {
-	return instance().verify(email, tok, hashed)
+func Verify(tok string) (string, error) {
+	return instance().verify(tok)
 }
 
 // SendToken sends password recovery link to user
@@ -108,8 +108,8 @@ func (t *tokenizer) generate(email string, offset int) (string, error) {
 }
 
 // Verify verifies token validity
-func (t *tokenizer) verify(email, tok string, hashed string) error {
-
+func (t *tokenizer) verify(tok string) (string, error) {
+	email := ""
 	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -121,19 +121,16 @@ func (t *tokenizer) verify(email, tok string, hashed string) error {
 		return t.hmacSampleSecret, nil
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		fmt.Println(claims["email"], claims["nbf"])
 		if claims.VerifyExpiresAt(time.Now().Unix(), false) == false {
 			t.logger.Error(ErrExpiredToken.Error())
-			return ErrExpiredToken
+			return "", ErrExpiredToken
 		}
-		if email != claims["email"] {
-			t.logger.Error("mail not matching token")
-			return ErrMalformedToken
-		}
+		email = claims["email"].(string)
+
 	} else {
-		return err
+		return email, err
 	}
-	return nil
+	return email, nil
 }
 
 // SendToken sends password recovery link to user

@@ -56,15 +56,22 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 		opts...,
 	))
 
-	mux.Post("/password/reset", kithttp.NewServer(
+	mux.Post("/password/request", kithttp.NewServer(
 		kitot.TraceServer(tracer, "res-req")(passwordResetRequestEndpoint(svc)),
 		decodePasswordResetRequest,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Patch("/password", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordResetPatchEndpoint(svc)),
+	mux.Put("/password/reset", kithttp.NewServer(
+		kitot.TraceServer(tracer, "reset")(passwordResetPutEndpoint(svc)),
+		decodePasswordReset,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Put("/password/change", kithttp.NewServer(
+		kitot.TraceServer(tracer, "reset")(passwordChangeEndpoint(svc)),
 		decodePasswordReset,
 		encodeResponse,
 		opts...,

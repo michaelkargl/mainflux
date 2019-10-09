@@ -74,11 +74,11 @@ func (ms *metricsMiddleware) GenerateResetToken(ctx context.Context, email, host
 	return ms.svc.GenerateResetToken(ctx, email, host)
 }
 
-func (ms *metricsMiddleware) ChangePassword(ctx context.Context, email, token, password string) error {
+func (ms *metricsMiddleware) UpdatePassword(ctx context.Context, email, password string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "change_password").Add(1)
 		ms.latency.With("method", "change_password").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ChangePassword(ctx, email, token, password)
+	return ms.svc.UpdatePassword(ctx, email, password)
 }
