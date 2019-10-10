@@ -19,7 +19,7 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err := svc.Re[gister(ctx, req.user)
+		err := svc.Register(ctx, req.user)
 		return tokenRes{}, err
 	}
 }
@@ -70,61 +70,6 @@ func passwordResetPutEndpoint(svc users.Service) endpoint.Endpoint {
 			return res, nil
 		}
 		res.Msg = ""
-		return res, nil
-	}
-}
-
-func userUpdateEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(userReq)
-
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		// TO DO
-		// u, err := svc.UserInfo(ctx, req.token)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// change this return value
-		return identityRes{"", map[string]interface{}{}}, nil
-	}
-}
-
-func passwordUpdateEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-
-		// req : = request.(passwordChange)
-
-		// TO DO
-
-		return identityRes{"", map[string]interface{}{}}, nil
-	}
-}
-
-func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(passResReq)
-		// TO DO
-		// This endpoint will initiate the reset procedure
-		// it will prepare and send a link for reset to the users email
-
-		return nil, nil
-
-	}
-}
-
-func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(resetTokenReq)
-		err := svc.ChangePassword(ctx, req.email, req.token, req.password)
-		if err != nil {
-			res.Error = err.Error()
-			return res, nil
-		}
-		res.Error = ""
 		return res, nil
 	}
 }
