@@ -64,33 +64,3 @@ func (req resetTokenReq) validate() error {
 	}
 	return nil
 }
-
-type passResReq struct {
-	token string
-}
-
-func (req viewUserInfoReq) validate() error {
-	if req.token == "" {
-		return users.ErrUnauthorizedAccess
-	}
-	return nil
-}
-
-type resetTokenReq struct {
-	token    string
-	email    string
-	password string
-}
-
-func (req resetTokenReq) validate() error {
-	if req.token == "" {
-		return users.ErrMisingResetToken
-	}
-	if req.email == "" {
-		return users.ErrMissingEmail
-	}
-	if req.password == "" {
-		return users.ErrMalformedEntity
-	}
-	return nil
-}
