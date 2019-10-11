@@ -6,8 +6,9 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	"github.com/mainflux/mainflux/users/token"
+	"github.com/mainflux/mainflux/users/email"
 )
 
 var (
@@ -78,20 +79,31 @@ type Service interface {
 	GenerateResetToken(_ context.Context, email, host string) error
 
 	// UpdatePassword change users password in reset flow
-	UpdatePassword(_ context.Context, email, password string) error
+	UpdatePassword(_ context.Context, token, password string) error
+
+	//SendToken sends reset password link to email
+	SendToken(_ context.Context, host, email, token string) error
 }
 
 var _ Service = (*usersService)(nil)
+
+// Emailer used for sending messages to user
+type Emailer struct {
+	ResetURL string
+	Agent    *email.Agent
+}
 
 type usersService struct {
 	users  UserRepository
 	hasher Hasher
 	idp    IdentityProvider
+	token  Tokenizer
+	email  Emailer
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, hasher Hasher, idp IdentityProvider) Service {
-	return &usersService{users: users, hasher: hasher, idp: idp}
+func New(users UserRepository, hasher Hasher, idp IdentityProvider, m Emailer, t Tokenizer) Service {
+	return &usersService{users: users, hasher: hasher, idp: idp, email: m, token: t}
 }
 
 func (svc usersService) Register(ctx context.Context, user User) error {
@@ -149,16 +161,20 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 		return ErrUserNotFound
 	}
 
-	tok, err := token.Generate(email, 0)
+	tok, err := svc.token.Generate(email, 0)
 	if err != nil {
 		return ErrGeneratingResetToken
 	}
-
-	token.SendToken(host, email, tok)
-	return nil
+	return svc.SendToken(ctx, host, email, tok)
 }
 
-func (svc usersService) UpdatePassword(ctx context.Context, email, password string) error {
+func (svc usersService) UpdatePassword(ctx context.Context, token, password string) error {
+
+	email, err := svc.token.Verify(token)
+	if err != nil {
+		return err
+	}
+
 	u, err := svc.users.RetrieveByID(ctx, email)
 	if err != nil || u.Email == "" {
 		return ErrUserNotFound
@@ -168,6 +184,19 @@ func (svc usersService) UpdatePassword(ctx context.Context, email, password stri
 	if err != nil {
 		return err
 	}
-	err = svc.users.UpdatePassword(ctx, email, password)
-	return err
+	return svc.users.UpdatePassword(ctx, email, password)
+}
+
+// SendToken sends password recovery link to user
+func (svc usersService) SendToken(_ context.Context, host, email, token string) error {
+	url := svc.email.ResetURL
+	msg := []byte(fmt.Sprintf("To: %s\r\n"+
+		"Subject: Reset Password!\r\n"+
+		"\r\n"+
+		"You have initiated password reset.\r\n"+
+		"Follow the link below to reset password.\r\n"+
+		"%s%s?token=%s", email, host, url, token))
+
+	svc.email.Agent.Send([]string{email}, msg)
+	return nil
 }

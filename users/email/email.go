@@ -1,4 +1,4 @@
-package mail
+package email
 
 import (
 	"fmt"
@@ -21,14 +21,14 @@ const (
 	defMailFromAddress = ""
 	defMailFromName    = ""
 
-	envMailDriver      = "MF_MAIL_DRIVER"
-	envMailHost        = "MF_MAIL_HOST"
-	envMailPort        = "MF_MAIL_PORT"
-	envMailUsername    = "MF_MAIL_USERNAME"
-	envMailPassword    = "MF_MAIL_PASSWORD"
-	envMailFromAddress = "MF_MAIL_FROM_ADDRESS"
-	envMailFromName    = "MF_MAIL_FROM_NAME"
-	envMailLogLevel    = "MF_MAIL_LOG_LEVEL"
+	envMailDriver      = "MF_EMAIL_DRIVER"
+	envMailHost        = "MF_EMAIL_HOST"
+	envMailPort        = "MF_EMAIL_PORT"
+	envMailUsername    = "MF_EMAIL_USERNAME"
+	envMailPassword    = "MF_EMAIL_PASSWORD"
+	envMailFromAddress = "MF_EMAIL_FROM_ADDRESS"
+	envMailFromName    = "MF_EMAIL_FROM_NAME"
+	envMailLogLevel    = "MF_EMAIL_LOG_LEVEL"
 )
 
 type mail struct {
@@ -42,20 +42,20 @@ type mail struct {
 }
 
 // Agent for mailing
-type agent struct {
+type Agent struct {
 	conf mail
 	auth smtp.Auth
 	addr string
 	log  logger.Logger
 }
 
-var a *agent
+var a *Agent
 var once sync.Once
 
 // Agent - Thread safe creation of mail agent
-func instance() *agent {
+func Instance() *Agent {
 	once.Do(func() {
-		a = &agent{}
+		a = &Agent{}
 
 		a.conf = mail{
 			driver:      mainflux.Env(envMailDriver, defMailDriver),
@@ -83,12 +83,11 @@ func instance() *agent {
 }
 
 // Send sends e-mail
-func Send(to []string, msg []byte) {
+func (a *Agent) Send(to []string, msg []byte) {
 	go func() {
-		a := instance()
 		err := smtp.SendMail(a.addr, a.auth, a.conf.fromAddress, to, msg)
 		if err != nil {
-			a.log.Error(fmt.Sprintf("Failed to send mail:%s", err.Error()))
+			a.log.Error(fmt.Sprintf("Failed to send email:%s", err.Error()))
 		}
 	}()
 }

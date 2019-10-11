@@ -16,7 +16,7 @@ var (
 )
 
 // MailSent message response when link is sent
-const MailSent = "Mail with reset link is sent"
+const MailSent = "Email with reset link is sent"
 
 type tokenRes struct {
 	Token string `json:"token,omitempty"`

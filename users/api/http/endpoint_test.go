@@ -18,6 +18,7 @@ import (
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users"
 	httpapi "github.com/mainflux/mainflux/users/api/http"
+	"github.com/mainflux/mainflux/users/email"
 	"github.com/mainflux/mainflux/users/mocks"
 	"github.com/mainflux/mainflux/users/token"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -60,8 +61,10 @@ func newService() users.Service {
 	repo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
 	idp := mocks.NewIdentityProvider()
+	token := token.Instance()
+	mail := users.Emailer{ResetURL: "/passwd/reset", Agent: email.Instance()}
 
-	return users.New(repo, hasher, idp)
+	return users.New(repo, hasher, idp, mail, token)
 }
 
 func newServer(svc users.Service) *httptest.Server {
@@ -214,7 +217,7 @@ func TestPasswordResetRequest(t *testing.T) {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/password/request", ts.URL),
+			url:         fmt.Sprintf("%s/password/reset-request", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
@@ -235,25 +238,34 @@ func TestPasswordReset(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
+	resData := struct {
+		Msg string `json:"msg"`
+	}{
+		"",
+	}
 	reqData := struct {
 		Token    string `json:"token,omitempty"`
 		Password string `json:"password,omitempty"`
 		ConfPass string `json:"confirmPassword,omitempty"`
 	}{}
 
-	expectedSuccess := toJSON(struct {
-		Msg string `json:"msg"`
-	}{
-		"",
-	})
+	expectedSuccess := toJSON(resData)
+
+	resData.Msg = users.ErrUserNotFound.Error()
+	expectedNonExUser := toJSON(resData)
 
 	svc.Register(context.Background(), user)
-	tok, _ := token.Generate(user.Email, 0)
+	tok, _ := token.Instance().Generate(user.Email, 0)
 
 	reqData.Password = user.Password
 	reqData.ConfPass = user.Password
 	reqData.Token = tok
 	dataResExisting := toJSON(reqData)
+
+	reqData.Token, _ = token.Instance().Generate("non-existentuser@example.com", 0)
+
+	reqNoExist := toJSON(reqData)
+	reqData.Token, _ = token.Instance().Generate(user.Email, -5)
 
 	cases := []struct {
 		desc        string
@@ -263,7 +275,8 @@ func TestPasswordReset(t *testing.T) {
 		res         string
 		tok         string
 	}{
-		{"password reset with valid token and mail", dataResExisting, contentType, http.StatusCreated, expectedSuccess, tok},
+		{"password reset with valid token", dataResExisting, contentType, http.StatusCreated, expectedSuccess, tok},
+		{"password reset with invalid token", reqNoExist, contentType, http.StatusCreated, expectedNonExUser, tok},
 	}
 
 	for _, tc := range cases {
