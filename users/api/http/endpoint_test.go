@@ -62,9 +62,9 @@ func newService() users.Service {
 	hasher := mocks.NewHasher()
 	idp := mocks.NewIdentityProvider()
 	token := token.Instance()
-	mail := users.Emailer{ResetURL: "/passwd/reset", Agent: email.Instance()}
+	email := users.Emailer{ResetURL: "/password/reset", Agent: email.Instance()}
 
-	return users.New(repo, hasher, idp, mail, token)
+	return users.New(repo, hasher, idp, email, token)
 }
 
 func newServer(svc users.Service) *httptest.Server {

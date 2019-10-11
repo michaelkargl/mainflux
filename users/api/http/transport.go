@@ -183,7 +183,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case users.ErrUnauthorizedAccess:
 		w.WriteHeader(http.StatusForbidden)
 	case users.ErrUserNotFound:
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 	case users.ErrConflict:
 		w.WriteHeader(http.StatusConflict)
 	case errUnsupportedContentType:

@@ -5,7 +5,6 @@ package http
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/users"
@@ -59,9 +58,7 @@ func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 		res := resetPassRes{}
 
-		err := svc.UpdatePassword(ctx, req.Token, req.Password)
-		if err != nil {
-			fmt.Printf("err %s\n", err.Error())
+		if err := svc.UpdatePassword(ctx, req.Token, req.Password); err != nil {
 			res.Msg = err.Error()
 			return res, nil
 		}
