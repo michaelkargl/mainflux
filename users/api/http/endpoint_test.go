@@ -14,11 +14,11 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users"
 	httpapi "github.com/mainflux/mainflux/users/api/http"
+	"github.com/mainflux/mainflux/users/email"
 	"github.com/mainflux/mainflux/users/mocks"
 	"github.com/mainflux/mainflux/users/token"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -61,8 +61,10 @@ func newService() users.Service {
 	repo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
 	idp := mocks.NewIdentityProvider()
+	token := token.Instance()
+	email := users.Emailer{ResetURL: "/password/reset", Agent: email.Instance()}
 
-	return users.New(repo, hasher, idp)
+	return users.New(repo, hasher, idp, email, token)
 }
 
 func newServer(svc users.Service) *httptest.Server {
@@ -186,16 +188,16 @@ func TestPasswordResetRequest(t *testing.T) {
 		Password: "pass",
 	})
 
-	expectedExisting := toJSON(struct {
-		Msg string `json:"msg"`
-	}{
-		httpapi.MailSent,
-	})
-
 	expectedNonExistent := toJSON(struct {
 		Msg string `json:"msg"`
 	}{
 		users.ErrUserNotFound.Error(),
+	})
+
+	expectedExisting := toJSON(struct {
+		Msg string `json:"msg"`
+	}{
+		httpapi.MailSent,
 	})
 
 	svc.Register(context.Background(), user)
@@ -207,15 +209,15 @@ func TestPasswordResetRequest(t *testing.T) {
 		status      int
 		res         string
 	}{
-		{"password reset with valid email", data, contentType, http.StatusOK, expectedExisting},
-		{"password reset with invalid email", nonexistentData, contentType, http.StatusOK, expectedNonExistent},
+		{"password reset with valid email", data, contentType, http.StatusCreated, expectedExisting},
+		{"password reset with invalid email", nonexistentData, contentType, http.StatusCreated, expectedNonExistent},
 	}
 
 	for _, tc := range cases {
 		req := testRequest{
 			client:      client,
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/password/reset", ts.URL),
+			url:         fmt.Sprintf("%s/password/reset-request", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
@@ -235,50 +237,34 @@ func TestPasswordReset(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-	reqData := struct {
-		Email    string
-		Password string
-		Token    string
-	}{}
-
-	expectedExpired := toJSON(struct {
-		Msg string `json:"msg"`
-	}{
-		token.ErrExpiredToken.Error(),
-	})
-
-	expectedNonExistent := toJSON(struct {
-		Msg string `json:"msg"`
-	}{
-		users.ErrUserNotFound.Error(),
-	})
-
-	expectedSuccess := toJSON(struct {
+	resData := struct {
 		Msg string `json:"msg"`
 	}{
 		"",
-	})
+	}
+	reqData := struct {
+		Token    string `json:"token,omitempty"`
+		Password string `json:"password,omitempty"`
+		ConfPass string `json:"confirmPassword,omitempty"`
+	}{}
 
-	expectedNotValidYet := toJSON(struct {
-		Msg string `json:"msg"`
-	}{
-		"Token is not valid yet",
-	})
+	expectedSuccess := toJSON(resData)
+
+	resData.Msg = users.ErrUserNotFound.Error()
+	expectedNonExUser := toJSON(resData)
 
 	svc.Register(context.Background(), user)
-	tok, _ := token.Generate(user.Email, 0)
-	tokExp, _ := token.Generate(user.Email, -5)
+	tok, _ := token.Instance().Generate(user.Email, 0)
 
-	reqData.Email = user.Email
 	reqData.Password = user.Password
+	reqData.ConfPass = user.Password
 	reqData.Token = tok
 	dataResExisting := toJSON(reqData)
 
-	reqData.Token = tokExp
-	dataResExpTok := toJSON(reqData)
+	reqData.Token, _ = token.Instance().Generate("non-existentuser@example.com", 0)
 
-	reqData.Email = "non-existentuser@example.com"
-	dataResNonExisting := toJSON(reqData)
+	reqNoExist := toJSON(reqData)
+	reqData.Token, _ = token.Instance().Generate(user.Email, -5)
 
 	cases := []struct {
 		desc        string
@@ -288,18 +274,15 @@ func TestPasswordReset(t *testing.T) {
 		res         string
 		tok         string
 	}{
-		{"password reset with token not yet valid", dataResExisting, contentType, http.StatusOK, expectedNotValidYet, tok},
-		{"password reset with valid token and mail", dataResExisting, contentType, http.StatusOK, expectedSuccess, tok},
-		{"password reset with invalid email", dataResNonExisting, contentType, http.StatusOK, expectedNonExistent, tok},
-		{"password reset expired token", dataResExpTok, contentType, http.StatusOK, expectedExpired, tokExp},
+		{"password reset with valid token", dataResExisting, contentType, http.StatusCreated, expectedSuccess, tok},
+		{"password reset with invalid token", reqNoExist, contentType, http.StatusCreated, expectedNonExUser, tok},
 	}
 
-	first := false
 	for _, tc := range cases {
 		req := testRequest{
 			client:      client,
-			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/password", ts.URL),
+			method:      http.MethodPut,
+			url:         fmt.Sprintf("%s/password/reset", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
 		}
@@ -312,9 +295,5 @@ func TestPasswordReset(t *testing.T) {
 
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.Equal(t, tc.res, token, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
-		if first == false {
-			time.Sleep(10 * time.Second)
-			first = true
-		}
 	}
 }

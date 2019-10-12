@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/users"
-	"github.com/mainflux/mainflux/users/token"
 )
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
@@ -51,20 +50,15 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 // This is post request endpoint that actually sets new password. It requires a token
 // generated in the password reset request endpoint.
 // Token is verified for the TTL and against generated token saved in DB.
-func passwordResetPutEndpoint(svc users.Service) endpoint.Endpoint {
+func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resetTokenReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 		res := resetPassRes{}
-		email, err := token.Verify(req.Token)
-		if err != nil {
-			return nil, err
-		}
 
-		err = svc.UpdatePassword(ctx, email, req.Password)
-		if err != nil {
+		if err := svc.UpdatePassword(ctx, req.Token, req.Password); err != nil {
 			res.Msg = err.Error()
 			return res, nil
 		}
@@ -110,7 +104,7 @@ func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		err = svc.UpdatePassword(ctx, u.Email, req.Password)
+		err = svc.UpdatePassword(ctx, req.Token, req.Password)
 		if err != nil {
 			return nil, err
 		}

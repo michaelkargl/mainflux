@@ -10,7 +10,7 @@ import (
 var email = "johnsnow@gmai.com"
 
 func TestGenerate(t *testing.T) {
-	hash, err := token.Generate(email, 0)
+	hash, err := token.Instance().Generate(email, 0)
 	if err != nil {
 		t.Errorf("Token generation failed.")
 	}
@@ -18,26 +18,18 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
-	tok, err := token.Generate(email, 0)
+	tok, err := token.Instance().Generate(email, 0)
 	if err != nil {
 		t.Errorf("Token generation failed.")
 	}
 
-	if err := token.Verify(email, tok, ""); err != nil {
+	e, err := token.Instance().Verify(tok)
+	if err != nil {
 		fmt.Println("Here is a error:", err)
 		t.Errorf("Token verification failed.")
 	}
-
-}
-
-func TestHash(t *testing.T) {
-
-}
-
-func TestSend(t *testing.T) {
-	hash, err := token.Generate(email, 0)
-	if err != nil {
-		t.Errorf("Token generation failed.")
+	if e != email {
+		t.Errorf("Token verification failed.")
 	}
-	token.SendToken("http://localhost", email, hash)
+
 }

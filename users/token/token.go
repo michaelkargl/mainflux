@@ -1,7 +1,6 @@
-//Package token provides password recovery token generation with TTL
-//Token is sent by email to user as part of recovery URL
-//Token contains 32 bytes where first 4 bytes are exparation time and 28 bytes random string
-// exparation-email signed by secret signature
+// Package token provides password recovery token generation with jwt
+// Token is sent by email to user as part of recovery URL
+// Token is signed by secret signature
 package token
 
 import (
@@ -16,7 +15,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/users/mail"
+	"github.com/mainflux/mainflux/users"
 )
 
 var (
@@ -30,9 +29,10 @@ var (
 )
 
 const (
-	defTokenSecret   = "mainflux-secret"
-	defTokenDuration = "5"
-	defTokenLogLevel = "debug"
+	defTokenSecret        = "mainflux-secret"
+	defTokenDuration      = "5"
+	defTokenLogLevel      = "debug"
+	defTokenResetEndpoint = "/password/reset"
 
 	envTokenSecret   = "MF_TOKEN_SECRET"
 	envTokenDuration = "MF_TOKEN_DURATION"
@@ -42,15 +42,16 @@ const (
 var once sync.Once
 
 type tokenizer struct {
-	hmacSampleSecret []byte // secret for sigining token
+	hmacSampleSecret []byte // secret for signing token
 	tokenDuration    int    //token in duration in min
 	logger           logger.Logger
 }
 
 var t *tokenizer
 
-// Agent - Thread safe creation of mail agent
-func instance() *tokenizer {
+// Instance - Thread safe creation singleton instance of tokenizer.
+// Used for creating password reset token.
+func Instance() users.Tokenizer {
 	once.Do(func() {
 		t = &tokenizer{}
 		t.hmacSampleSecret = []byte(mainflux.Env(envTokenSecret, defTokenSecret))
@@ -67,31 +68,13 @@ func instance() *tokenizer {
 	return t
 }
 
-// Generate generate new random token with defined TTL.
-// offset can be used to manipulate token validity in time
-// useful for testing.
-func Generate(email string, offset int) (string, error) {
-	return instance().generate(email, offset)
-}
-
-// Verify verifies token validity
-func Verify(tok string) (string, error) {
-	return instance().verify(tok)
-}
-
-// SendToken sends password recovery link to user
-func SendToken(host, email, token string) {
-	instance().sendToken(host, email, token)
-}
-
-func (t *tokenizer) generate(email string, offset int) (string, error) {
-
+func (t *tokenizer) Generate(email string, offset int) (string, error) {
 	exp := t.tokenDuration + offset
 	if exp < 0 {
 		exp = 0
 	}
 	expires := time.Now().Add(time.Minute * time.Duration(exp))
-	nbf := time.Now().Add(time.Second * 10)
+	nbf := time.Now()
 
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain
@@ -108,7 +91,7 @@ func (t *tokenizer) generate(email string, offset int) (string, error) {
 }
 
 // Verify verifies token validity
-func (t *tokenizer) verify(tok string) (string, error) {
+func (t *tokenizer) Verify(tok string) (string, error) {
 	email := ""
 	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
@@ -133,20 +116,7 @@ func (t *tokenizer) verify(tok string) (string, error) {
 	return email, nil
 }
 
-// SendToken sends password recovery link to user
-func (t *tokenizer) sendToken(host, email, token string) {
-	body := buildBody(host, email, token)
-	mail.Send([]string{email}, body)
-}
-
-// Builds recovery email body
-func buildBody(host, email, token string) []byte {
-	msg := []byte(fmt.Sprintf("To: %s\r\n"+
-		"Subject: Reset Password!\r\n"+
-		"\r\n"+
-		"You have initiated password reset.\r\n"+
-		"Follow the link below to reset password.\r\n"+
-		"%s/passwd/reset?token=%s", email, host, token))
-
-	return msg
-}
+// // SendToken sends password recovery link to user
+// func SendToken(host, email, token string) {
+// 	instance().sendToken(host, email, token)
+// }

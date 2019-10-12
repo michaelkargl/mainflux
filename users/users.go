@@ -45,7 +45,7 @@ type UserRepository interface {
 	// RetrieveByID retrieves user by its unique identifier (i.e. email).
 	RetrieveByID(context.Context, string) (User, error)
 
-	// UpdatePassword(
+	// UpdatePassword updates password for user with given email
 	UpdatePassword(_ context.Context, email, password string) error
 }
 
