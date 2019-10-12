@@ -12,7 +12,7 @@ import (
 var (
 	_ mainflux.Response = (*tokenRes)(nil)
 	_ mainflux.Response = (*identityRes)(nil)
-	_ mainflux.Response = (*resetPassRes)(nil)
+	_ mainflux.Response = (*resetPasswRes)(nil)
 )
 
 // MailSent message response when link is sent

@@ -6,14 +6,9 @@ package users
 import (
 	"context"
 	"errors"
-<<<<<<< HEAD
-
-	"github.com/mainflux/mainflux/users/token"
-=======
 	"fmt"
 
 	"github.com/mainflux/mainflux/users/email"
->>>>>>> password-change
 )
 
 var (
@@ -158,38 +153,6 @@ func (svc usersService) UserInfo(ctx context.Context, token string) (User, error
 		Password: "",
 		Metadata: dbUser.Metadata,
 	}, nil
-
-}
-
-func (svc usersService) GenerateResetToken(ctx context.Context, email, host string) error {
-
-	user, err := svc.users.RetrieveByID(ctx, email)
-	if err != nil || user.Email == "" {
-		return ErrUserNotFound
-	}
-
-	tok, err := token.Generate(email, 0)
-	if err != nil {
-		return ErrGeneratingResetToken
-	}
-
-	token.SendToken(host, email, tok)
-
-	return nil
-}
-
-func (svc usersService) UpdatePassword(ctx context.Context, email, password string) error {
-	u, err := svc.users.RetrieveByID(ctx, email)
-	if err != nil || u.Email == "" {
-		return ErrUserNotFound
-	}
-
-	password, err = svc.hasher.Hash(password)
-	if err != nil {
-		return err
-	}
-	err = svc.users.UpdatePassword(ctx, email, password)
-	return err
 
 }
 
