@@ -36,7 +36,12 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)
-		res := resetPassRes{}
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		res := resetPasswRes{}
 		email := req.Email
 		err := svc.GenerateResetToken(ctx, email, req.Host)
 		if err != nil {
@@ -51,21 +56,15 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 // This is post request endpoint that actually sets new password. It requires a token
 // generated in the password reset request endpoint.
 // Token is verified for the TTL and against generated token saved in DB.
-func passwordResetPutEndpoint(svc users.Service) endpoint.Endpoint {
+func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resetTokenReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		res := resetPassRes{}
-		email, err := token.Verify(req.Token)
-		if err != nil {
-			res.Msg = err.Error()
-			return res, nil
-		}
+		res := resetPasswRes{}
 
-		err = svc.UpdatePassword(ctx, email, req.Password)
-		if err != nil {
+		if err := svc.UpdatePassword(ctx, req.Token, req.Password); err != nil {
 			res.Msg = err.Error()
 			return res, nil
 		}
@@ -88,6 +87,36 @@ func userInfoEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 
 		return identityRes{u.Email, u.Metadata}, nil
+	}
+}
+
+func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(passwChangeReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		u, err := svc.UserInfo(ctx, req.Token)
+		if err != nil {
+			return nil, err
+		}
+
+		u.Password = req.OldPassword
+
+		_, err = svc.Login(ctx, u)
+		if err != nil {
+			return nil, err
+		}
+
+		passwResetToken, err := token.Instance().Generate(u.Email, 0)
+		err = svc.UpdatePassword(ctx, passwResetToken, req.Password)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}
 }
 

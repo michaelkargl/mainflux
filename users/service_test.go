@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"github.com/mainflux/mainflux/users"
+	emailer "github.com/mainflux/mainflux/users/email"
 	"github.com/mainflux/mainflux/users/mocks"
+	"github.com/mainflux/mainflux/users/token"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,8 +23,10 @@ func newService() users.Service {
 	repo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
 	idp := mocks.NewIdentityProvider()
+	token := token.Instance()
+	e := users.Emailer{ResetURL: "", Agent: emailer.Instance()}
 
-	return users.New(repo, hasher, idp)
+	return users.New(repo, hasher, idp, e, token)
 }
 
 func TestRegister(t *testing.T) {

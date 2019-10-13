@@ -29,15 +29,12 @@ func (req viewUserInfoReq) validate() error {
 }
 
 type passwResetReq struct {
-	Email string `json:"email,omitempty"`
+	Email string `json:"email"`
 	Host  string `json:"host,omitempty"`
 }
 
 func (req passwResetReq) validate() error {
-	if req.Email == "" {
-		return users.ErrMissingEmail
-	}
-	if req.Host == "" {
+	if req.Email == "" || req.Host == "" {
 		return users.ErrMalformedEntity
 	}
 	return nil
@@ -50,17 +47,33 @@ type resetTokenReq struct {
 }
 
 func (req resetTokenReq) validate() error {
+	if req.Password == "" || req.ConfPass == "" {
+		return users.ErrMalformedEntity
+	}
 	if req.Token == "" {
 		return users.ErrMissingResetToken
+	}
+	if req.Password != req.ConfPass {
+		return users.ErrMalformedEntity
+	}
+	return nil
+}
+
+type passwChangeReq struct {
+	Token       string `json:"token,omitempty"`
+	Password    string `json:"password,omitempty"`
+	OldPassword string `json:"oldPassword,omitempty"`
+}
+
+func (req passwChangeReq) validate() error {
+	if req.Token == "" {
+		return users.ErrUnauthorizedAccess
 	}
 	if req.Password == "" {
 		return users.ErrMalformedEntity
 	}
-	if req.ConfPass == "" {
-		return users.ErrMalformedEntity
-	}
-	if req.Password != req.ConfPass {
-		return users.ErrMalformedEntity
+	if req.OldPassword == "" {
+		return users.ErrUnauthorizedAccess
 	}
 	return nil
 }

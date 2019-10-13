@@ -21,7 +21,8 @@ type userRepositoryMock struct {
 // NewUserRepository creates in-memory user repository
 func NewUserRepository() users.UserRepository {
 	return &userRepositoryMock{
-		users: make(map[string]users.User),
+		users:  make(map[string]users.User),
+		tokens: make(map[string]string),
 	}
 }
 

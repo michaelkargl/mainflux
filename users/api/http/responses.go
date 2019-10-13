@@ -12,11 +12,11 @@ import (
 var (
 	_ mainflux.Response = (*tokenRes)(nil)
 	_ mainflux.Response = (*identityRes)(nil)
-	_ mainflux.Response = (*resetPassRes)(nil)
+	_ mainflux.Response = (*resetPasswRes)(nil)
 )
 
 // MailSent message response when link is sent
-const MailSent = "Mail with reset link is sent"
+const MailSent = "Email with reset link is sent"
 
 type tokenRes struct {
 	Token string `json:"token,omitempty"`
@@ -51,18 +51,18 @@ func (res identityRes) Empty() bool {
 	return false
 }
 
-type resetPassRes struct {
+type resetPasswRes struct {
 	Msg string `json:"msg"`
 }
 
-func (res resetPassRes) Code() int {
+func (res resetPasswRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res resetPassRes) Headers() map[string]string {
+func (res resetPasswRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res resetPassRes) Empty() bool {
+func (res resetPasswRes) Empty() bool {
 	return false
 }

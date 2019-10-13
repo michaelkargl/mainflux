@@ -84,7 +84,7 @@ paths:
           description: Missing or invalid content type.
         500:
           $ref: "#/responses/ServiceError"
-  /password/reset:
+  /password/reset-request:
     post:
       summary: User password reset request
       description: |
@@ -110,8 +110,8 @@ paths:
           description: Missing or invalid content type.
         500:
           $ref: "#/responses/ServiceError"
-  /password:
-    patch:
+  /password/reset:
+    put:
       summary: User password reset endpoint
       description: |
         When user gets reset token posting a new password along to this endpoint will change password.

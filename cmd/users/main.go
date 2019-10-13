@@ -14,6 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/mainflux/mainflux/users/email"
+	"github.com/mainflux/mainflux/users/token"
 	"github.com/mainflux/mainflux/users/tracing"
 
 	"google.golang.org/grpc/credentials"
@@ -36,39 +38,41 @@ import (
 )
 
 const (
-	defLogLevel      = "error"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDBName        = "users"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	defHTTPPort      = "8180"
-	defGRPCPort      = "8181"
-	defSecret        = "users"
-	defServerCert    = ""
-	defServerKey     = ""
-	defJaegerURL     = ""
+	defLogLevel           = "error"
+	defDBHost             = "localhost"
+	defDBPort             = "5432"
+	defDBUser             = "mainflux"
+	defDBPass             = "mainflux"
+	defDBName             = "users"
+	defDBSSLMode          = "disable"
+	defDBSSLCert          = ""
+	defDBSSLKey           = ""
+	defDBSSLRootCert      = ""
+	defHTTPPort           = "8180"
+	defGRPCPort           = "8181"
+	defSecret             = "users"
+	defServerCert         = ""
+	defServerKey          = ""
+	defJaegerURL          = ""
+	defTokenResetEndpoint = "/password/reset"
 
-	envLogLevel      = "MF_USERS_LOG_LEVEL"
-	envDBHost        = "MF_USERS_DB_HOST"
-	envDBPort        = "MF_USERS_DB_PORT"
-	envDBUser        = "MF_USERS_DB_USER"
-	envDBPass        = "MF_USERS_DB_PASS"
-	envDBName        = "MF_USERS_DB"
-	envDBSSLMode     = "MF_USERS_DB_SSL_MODE"
-	envDBSSLCert     = "MF_USERS_DB_SSL_CERT"
-	envDBSSLKey      = "MF_USERS_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_USERS_DB_SSL_ROOT_CERT"
-	envHTTPPort      = "MF_USERS_HTTP_PORT"
-	envGRPCPort      = "MF_USERS_GRPC_PORT"
-	envSecret        = "MF_USERS_SECRET"
-	envServerCert    = "MF_USERS_SERVER_CERT"
-	envServerKey     = "MF_USERS_SERVER_KEY"
-	envJaegerURL     = "MF_JAEGER_URL"
+	envLogLevel           = "MF_USERS_LOG_LEVEL"
+	envDBHost             = "MF_USERS_DB_HOST"
+	envDBPort             = "MF_USERS_DB_PORT"
+	envDBUser             = "MF_USERS_DB_USER"
+	envDBPass             = "MF_USERS_DB_PASS"
+	envDBName             = "MF_USERS_DB"
+	envDBSSLMode          = "MF_USERS_DB_SSL_MODE"
+	envDBSSLCert          = "MF_USERS_DB_SSL_CERT"
+	envDBSSLKey           = "MF_USERS_DB_SSL_KEY"
+	envDBSSLRootCert      = "MF_USERS_DB_SSL_ROOT_CERT"
+	envHTTPPort           = "MF_USERS_HTTP_PORT"
+	envGRPCPort           = "MF_USERS_GRPC_PORT"
+	envSecret             = "MF_USERS_SECRET"
+	envServerCert         = "MF_USERS_SERVER_CERT"
+	envServerKey          = "MF_USERS_SERVER_KEY"
+	envJaegerURL          = "MF_JAEGER_URL"
+	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
 )
 
 type config struct {
@@ -80,6 +84,7 @@ type config struct {
 	serverCert string
 	serverKey  string
 	jaegerURL  string
+	resetURL   string
 }
 
 func main() {
@@ -99,7 +104,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, logger)
+	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger, errs)
@@ -137,6 +142,7 @@ func loadConfig() config {
 		serverCert: mainflux.Env(envServerCert, defServerCert),
 		serverKey:  mainflux.Env(envServerKey, defServerKey),
 		jaegerURL:  mainflux.Env(envJaegerURL, defJaegerURL),
+		resetURL:   mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
 	}
 }
 
@@ -173,13 +179,15 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret string, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, logger logger.Logger) users.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.UserRepositoryMiddleware(postgres.New(database), tracer)
 	hasher := bcrypt.New()
 	idp := jwt.New(secret)
+	emailer := users.Emailer{ResetURL: url, Agent: email.Instance()}
+	tokenizer := token.Instance()
 
-	svc := users.New(repo, hasher, idp)
+	svc := users.New(repo, hasher, idp, emailer, tokenizer)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

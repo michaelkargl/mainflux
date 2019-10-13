@@ -50,13 +50,13 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 	))
 
 	mux.Get("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register")(userInfoEndpoint(svc)),
+		kitot.TraceServer(tracer, "user_info")(userInfoEndpoint(svc)),
 		decodeViewInfo,
 		encodeResponse,
 		opts...,
 	))
 
-	mux.Post("/password/request", kithttp.NewServer(
+	mux.Post("/password/reset-request", kithttp.NewServer(
 		kitot.TraceServer(tracer, "res-req")(passwordResetRequestEndpoint(svc)),
 		decodePasswordResetRequest,
 		encodeResponse,
@@ -64,8 +64,15 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 	))
 
 	mux.Put("/password/reset", kithttp.NewServer(
-		kitot.TraceServer(tracer, "reset")(passwordResetPutEndpoint(svc)),
+		kitot.TraceServer(tracer, "reset")(passwordResetEndpoint(svc)),
 		decodePasswordReset,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Patch("/password", kithttp.NewServer(
+		kitot.TraceServer(tracer, "reset")(passwordChangeEndpoint(svc)),
+		decodePasswordChange,
 		encodeResponse,
 		opts...,
 	))
@@ -78,7 +85,7 @@ func MakeHandler(svc users.Service, tracer opentracing.Tracer, l log.Logger) htt
 	))
 
 	mux.Get("/users", kithttp.NewServer(
-		kitot.TraceServer(tracer, "register")(userInfoEndpoint(svc)),
+		kitot.TraceServer(tracer, "user_info")(userInfoEndpoint(svc)),
 		decodeViewInfo,
 		encodeResponse,
 		opts...,
@@ -143,6 +150,23 @@ func decodePasswordReset(_ context.Context, r *http.Request) (interface{}, error
 	return req, nil
 }
 
+func decodePasswordChange(_ context.Context, r *http.Request) (interface{}, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+		logger.Warn("Invalid or missing content type.")
+		return nil, errUnsupportedContentType
+	}
+
+	var req passwChangeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(fmt.Sprintf("Failed to decode reset request: %s", err))
+		return nil, err
+	}
+
+	req.Token = r.Header.Get("Authorization")
+
+	return req, nil
+}
+
 func decodeToken(_ context.Context, r *http.Request) (interface{}, error) {
 	vals := bone.GetQuery(r, "token")
 	if len(vals) > 1 {
@@ -183,7 +207,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case users.ErrUnauthorizedAccess:
 		w.WriteHeader(http.StatusForbidden)
 	case users.ErrUserNotFound:
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 	case users.ErrConflict:
 		w.WriteHeader(http.StatusConflict)
 	case errUnsupportedContentType:
