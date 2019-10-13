@@ -36,6 +36,11 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)
+
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
 		res := resetPasswRes{}
 		email := req.Email
 		err := svc.GenerateResetToken(ctx, email, req.Host)
