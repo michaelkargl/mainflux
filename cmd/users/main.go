@@ -54,7 +54,7 @@ const (
 	defServerCert         = ""
 	defServerKey          = ""
 	defJaegerURL          = ""
-	defTokenResetEndpoint = "/password/reset"
+	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
 
 	envLogLevel           = "MF_USERS_LOG_LEVEL"
 	envDBHost             = "MF_USERS_DB_HOST"
