@@ -32,10 +32,9 @@ var (
 )
 
 const (
-	defTokenSecret        = "mainflux-secret"
-	defTokenDuration      = "5"
-	defTokenLogLevel      = "debug"
-	defTokenResetEndpoint = "/password/reset"
+	defTokenSecret   = "mainflux-secret"
+	defTokenDuration = "5"
+	defTokenLogLevel = "debug"
 
 	envTokenSecret   = "MF_TOKEN_SECRET"
 	envTokenDuration = "MF_TOKEN_DURATION"
