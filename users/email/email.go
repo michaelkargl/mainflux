@@ -4,13 +4,15 @@ package emailer
 
 import (
 	"fmt"
+	"html/template"
 
 	"github.com/mainflux/mainflux/email"
 	"github.com/mainflux/mainflux/users"
 )
 
 const (
-	message = `You have initiated password reset.
+	resetPasswEmail = "resetPasswEmail.tmpl"
+	message         = `You have initiated password reset.
 			   Follow the link below to reset password.`
 )
 
@@ -22,8 +24,9 @@ type emailer struct {
 }
 
 // New creates new emailer utility
-func New() Emailer {
-	return &emailer{ResetURL: url, email.New()}
+func New(url string, c *email.Config) Emailer {
+	tmpl, _ := template.ParseFiles()
+	return &emailer{ResetURL: url, email.New(c, tmpl)}
 }
 
 func (e *emailer) SendPasswordReset(To []string, host string, string token) error {
