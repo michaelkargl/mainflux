@@ -39,7 +39,7 @@ type Agent struct {
 }
 
 // New creates new email agent
-func New(c *Config) *Agent {
+func New(c *Config, t *template.Template) *Agent {
 	a := &Agent{}
 	a.conf = c
 
