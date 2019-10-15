@@ -55,6 +55,14 @@ const (
 	defServerKey          = ""
 	defJaegerURL          = ""
 	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
+	defEmailLogLevel      = "debug"
+	defEmailDriver        = "smtp"
+	defEmailHost          = "localhost"
+	defEmailPort          = "25"
+	defEmailUsername      = "root"
+	defEmailPassword      = ""
+	defEmailFromAddress   = ""
+	defEmailFromName      = ""
 
 	envLogLevel           = "MF_USERS_LOG_LEVEL"
 	envDBHost             = "MF_USERS_DB_HOST"
@@ -73,11 +81,20 @@ const (
 	envServerKey          = "MF_USERS_SERVER_KEY"
 	envJaegerURL          = "MF_JAEGER_URL"
 	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
+	envEmailDriver        = "MF_EMAIL_DRIVER"
+	envEmailHost          = "MF_EMAIL_HOST"
+	envEmailPort          = "MF_EMAIL_PORT"
+	envEmailUsername      = "MF_EMAIL_USERNAME"
+	envEmailPassword      = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress   = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName      = "MF_EMAIL_FROM_NAME"
+	envEmailLogLevel      = "MF_EMAIL_LOG_LEVEL"
 )
 
 type config struct {
 	logLevel   string
 	dbConfig   postgres.Config
+	mailConf   email.Config
 	httpPort   string
 	grpcPort   string
 	secret     string
@@ -104,7 +121,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, logger)
+	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, cfg.logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger, errs)
@@ -144,6 +161,15 @@ func loadConfig() config {
 		jaegerURL:  mainflux.Env(envJaegerURL, defJaegerURL),
 		resetURL:   mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
 	}
+
+	e := email.Config{
+		fromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		fromName:    mainflux.Env(envEmailFromName, defEmailFromName),
+		host:        mainflux.Env(envEmailHost, defEmailHost),
+		port:        mainflux.Env(envEmailPort, defEmailPort),
+		username:    mainflux.Env(envEmailUsername, defEmailUsername),
+		password:    mainflux.Env(envEmailPassword, defEmailPassword),
+	}
 }
 
 func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
@@ -179,7 +205,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, mc *mail.Config, logger logger.Logger) users.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.UserRepositoryMiddleware(postgres.New(database), tracer)
 	hasher := bcrypt.New()
