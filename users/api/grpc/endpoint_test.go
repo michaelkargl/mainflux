@@ -12,9 +12,7 @@ import (
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/users"
 	grpcapi "github.com/mainflux/mainflux/users/api/grpc"
-	"github.com/mainflux/mainflux/users/email"
 	"github.com/mainflux/mainflux/users/mocks"
-	"github.com/mainflux/mainflux/users/token"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -37,8 +35,8 @@ func newService() users.Service {
 	repo := mocks.NewUserRepository()
 	hasher := mocks.NewHasher()
 	idp := mocks.NewIdentityProvider()
-	token := token.Instance()
-	email := users.Emailer{ResetURL: "", Agent: email.Instance()}
+	token := mocks.NewTokenizer()
+	email := mocks.NewEmailer()
 
 	return users.New(repo, hasher, idp, email, token)
 }
