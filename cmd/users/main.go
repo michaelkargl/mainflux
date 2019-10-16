@@ -65,6 +65,7 @@ const (
 	defEmailPassword    = ""
 	defEmailFromAddress = ""
 	defEmailFromName    = ""
+	defEmailTemplate    = "../configs/ressetPasswEmail.tmpl"
 
 	defTokenSecret        = "mainflux-secret"
 	defTokenDuration      = "5"
@@ -95,6 +96,7 @@ const (
 	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName    = "MF_EMAIL_FROM_NAME"
 	envEmailLogLevel    = "MF_EMAIL_LOG_LEVEL"
+	envEmailTemplate    = "MF_EMAIL_TEMPLATE"
 
 	envTokenSecret        = "MF_TOKEN_SECRET"
 	envTokenDuration      = "MF_TOKEN_DURATION"
@@ -174,6 +176,7 @@ func loadConfig() config {
 		Port:        mainflux.Env(envEmailPort, defEmailPort),
 		Username:    mainflux.Env(envEmailUsername, defEmailUsername),
 		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
+		Template:    mainflux.Env(envEmailTemplate, defEmailTemplate),
 	}
 
 	tokConf := tokConfig{

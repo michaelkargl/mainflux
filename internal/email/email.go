@@ -36,6 +36,7 @@ type Config struct {
 	Password    string
 	FromAddress string
 	FromName    string
+	Template    string
 }
 
 // Agent for mailing
@@ -60,7 +61,7 @@ func New(c *Config, t *template.Template) *Agent {
 		return a
 	}
 
-	tmpl, _ := template.ParseFiles("email.tmpl")
+	tmpl, _ := template.ParseFiles(c.Template)
 	a.tmpl = tmpl
 	return a
 }
