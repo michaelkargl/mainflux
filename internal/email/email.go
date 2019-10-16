@@ -14,9 +14,17 @@ import (
 )
 
 var (
-	// ErrMissingTemplate missing email template file
-	ErrMissingTemplate = errors.New("Missing email template file")
+	// ErrMissingEmailTmpl missing email template file
+	ErrMissingEmailTmpl = errors.New("Missing email template file")
 )
+
+type emailTemplate struct {
+	To      []string
+	From    string
+	Header  string
+	Content string
+	Footer  string
+}
 
 // Config email agent configuration.
 type Config struct {
@@ -46,17 +54,19 @@ func New(c *Config, t *template.Template) *Agent {
 	// Set up authentication information
 	a.auth = smtp.PlainAuth("", c.Username, c.Password, c.Host)
 	a.addr = fmt.Sprintf("%s:%s", c.Host, c.Port)
+	if t != nil {
+		a.tmpl = t
+		return a
+	}
+
+	tmpl, _ := template.ParseFiles("email.tmpl")
+	a.tmpl = tmpl
 	return a
 }
 
 // Init initializes mailing agent
-func (a *Agent) Init() error {
-	tmpl, err := template.ParseFiles("email.tmpl")
-	if err != nil {
-		return err
-	}
-	a.tmpl = tmpl
-	return nil
+func (a *Agent) SetTemplate(t *template.Template) {
+	a.tmpl = t
 }
 
 // Send sends e-mail
@@ -67,26 +77,21 @@ func (a *Agent) Init() error {
 // Footer
 func (a *Agent) Send(To []string, From, Header, Content, Footer string) error {
 	if a.tmpl == nil {
-		return ErrMissingTemplate
+		return ErrMissingEmailTmpl
 	}
 	email := new(bytes.Buffer)
-	tmpl := struct {
-		to      []string
-		from    string
-		header  string
-		content string
-		footer  string
-	}{
-		to:      To,
-		from:    From,
-		header:  Header,
-		content: Content,
-		footer:  Footer,
+	tmpl := emailTemplate{
+		To:      To,
+		From:    From,
+		Header:  Header,
+		Content: Content,
+		Footer:  Footer,
 	}
 
 	err := a.tmpl.Execute(email, tmpl)
 	if err != nil {
 		return err
 	}
-	return smtp.SendMail(a.addr, a.auth, a.conf.FromAddress, To, email.Bytes())
+	err = smtp.SendMail(a.addr, a.auth, a.conf.FromAddress, To, email.Bytes())
+	return err
 }

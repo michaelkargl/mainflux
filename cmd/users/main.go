@@ -14,7 +14,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mainflux/mainflux/users/email"
+	"github.com/mainflux/mainflux/internal/email"
+	"github.com/mainflux/mainflux/users"
+	"github.com/mainflux/mainflux/users/emailer"
 	"github.com/mainflux/mainflux/users/token"
 	"github.com/mainflux/mainflux/users/tracing"
 
@@ -24,7 +26,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/logger"
-	"github.com/mainflux/mainflux/users"
 	"github.com/mainflux/mainflux/users/api"
 	grpcapi "github.com/mainflux/mainflux/users/api/grpc"
 	httpapi "github.com/mainflux/mainflux/users/api/http"
@@ -94,7 +95,7 @@ const (
 type config struct {
 	logLevel   string
 	dbConfig   postgres.Config
-	mailConf   email.Config
+	emailConf  email.Config
 	httpPort   string
 	grpcPort   string
 	secret     string
@@ -121,7 +122,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, cfg.logger)
+	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, cfg.emailConf, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger, errs)
@@ -150,9 +151,19 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
+	e := email.Config{
+		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
+		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
+		Host:        mainflux.Env(envEmailHost, defEmailHost),
+		Port:        mainflux.Env(envEmailPort, defEmailPort),
+		Username:    mainflux.Env(envEmailUsername, defEmailUsername),
+		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
+	}
+
 	return config{
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:   dbConfig,
+		emailConf:  e,
 		httpPort:   mainflux.Env(envHTTPPort, defHTTPPort),
 		grpcPort:   mainflux.Env(envGRPCPort, defGRPCPort),
 		secret:     mainflux.Env(envSecret, defSecret),
@@ -162,14 +173,6 @@ func loadConfig() config {
 		resetURL:   mainflux.Env(envTokenResetEndpoint, defTokenResetEndpoint),
 	}
 
-	e := email.Config{
-		fromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
-		fromName:    mainflux.Env(envEmailFromName, defEmailFromName),
-		host:        mainflux.Env(envEmailHost, defEmailHost),
-		port:        mainflux.Env(envEmailPort, defEmailPort),
-		username:    mainflux.Env(envEmailUsername, defEmailUsername),
-		password:    mainflux.Env(envEmailPassword, defEmailPassword),
-	}
 }
 
 func initJaeger(svcName, url string, logger logger.Logger) (opentracing.Tracer, io.Closer) {
@@ -205,12 +208,12 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, mc *mail.Config, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, mc email.Config, logger logger.Logger) users.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.UserRepositoryMiddleware(postgres.New(database), tracer)
 	hasher := bcrypt.New()
 	idp := jwt.New(secret)
-	emailer := users.Emailer{ResetURL: url, Agent: email.Instance()}
+	emailer := emailer.New(url, &mc)
 	tokenizer := token.Instance()
 
 	svc := users.New(repo, hasher, idp, emailer, tokenizer)

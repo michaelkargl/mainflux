@@ -6,9 +6,6 @@ package users
 import (
 	"context"
 	"errors"
-	"fmt"
-
-	"github.com/mainflux/mainflux/users/email"
 )
 
 var (
@@ -86,12 +83,6 @@ type Service interface {
 }
 
 var _ Service = (*usersService)(nil)
-
-// Emailer used for sending messages to user
-type Emailer struct {
-	ResetURL string
-	Agent    *email.Agent
-}
 
 type usersService struct {
 	users  UserRepository
@@ -190,14 +181,6 @@ func (svc usersService) UpdatePassword(ctx context.Context, token, password stri
 
 // SendToken sends password recovery link to user
 func (svc usersService) SendToken(_ context.Context, host, email, token string) error {
-	url := svc.email.ResetURL
-	msg := []byte(fmt.Sprintf("To: %s\r\n"+
-		"Subject: Reset Password!\r\n"+
-		"\r\n"+
-		"You have initiated password reset.\r\n"+
-		"Follow the link below to reset password.\r\n"+
-		"%s%s?token=%s", email, host, url, token))
-
-	svc.email.Agent.Send([]string{email}, msg)
-	return nil
+	to := []string{email}
+	return svc.email.SendPasswordReset(to, host, token)
 }
