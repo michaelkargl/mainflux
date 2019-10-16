@@ -21,6 +21,7 @@ var (
 type emailTemplate struct {
 	To      []string
 	From    string
+	Subject string
 	Header  string
 	Content string
 	Footer  string
@@ -70,22 +71,23 @@ func (a *Agent) SetTemplate(t *template.Template) {
 }
 
 // Send sends e-mail
-// From
-// To
-// Header
-// Content
-// Footer
-func (a *Agent) Send(To []string, From, Header, Content, Footer string) error {
+func (a *Agent) Send(To []string, From, Subject, Header, Content, Footer string) error {
 	if a.tmpl == nil {
 		return ErrMissingEmailTmpl
 	}
+
 	email := new(bytes.Buffer)
 	tmpl := emailTemplate{
 		To:      To,
 		From:    From,
+		Subject: Subject,
 		Header:  Header,
 		Content: Content,
 		Footer:  Footer,
+	}
+
+	if From == "" {
+		tmpl.From = a.conf.FromName
 	}
 
 	err := a.tmpl.Execute(email, tmpl)
