@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/mainflux/mainflux/internal/email"
@@ -114,10 +115,9 @@ type config struct {
 	resetURL   string
 }
 
-
 type tokConfig struct {
 	hmacSampleSecret []byte // secret for signing token
-	tokenDuration    int    // token in duration in min
+	tokenDuration    string // token in duration in min
 }
 
 func main() {
@@ -137,7 +137,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, cfg.emailConf, logger)
+	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, cfg, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger, errs)
@@ -176,16 +176,16 @@ func loadConfig() config {
 		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
 	}
 
-	tokConf := tokConfig {
-		hmacSampleSecret: []byte(mainflux.Env(envTokenSecret, defTokenSecret))
-		tokenDuration: strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
+	tokConf := tokConfig{
+		hmacSampleSecret: []byte(mainflux.Env(envTokenSecret, defTokenSecret)),
+		tokenDuration:    mainflux.Env(envTokenDuration, defTokenDuration),
 	}
 
 	return config{
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:   dbConfig,
 		emailConf:  emlConf,
-		tokConf: 	tokConf,
+		tokConf:    tokConf,
 		httpPort:   mainflux.Env(envHTTPPort, defHTTPPort),
 		grpcPort:   mainflux.Env(envGRPCPort, defGRPCPort),
 		secret:     mainflux.Env(envSecret, defSecret),
@@ -236,7 +236,11 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, c co
 	hasher := bcrypt.New()
 	idp := jwt.New(secret)
 	emailer := emailer.New(url, &c.emailConf)
-	tokenizer := token.New(c.tokConf.hmacSampleSecret, c.tokConf.tokenDuration)
+	tDur, err := strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	tokenizer := token.New(c.tokConf.hmacSampleSecret, tDur)
 
 	svc := users.New(repo, hasher, idp, emailer, tokenizer)
 	svc = api.LoggingMiddleware(svc, logger)
