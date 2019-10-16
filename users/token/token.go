@@ -8,16 +8,9 @@ package token
 
 import (
 	"errors"
-	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/mainflux/mainflux"
-	"github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users"
 )
 
@@ -31,43 +24,16 @@ var (
 	ErrWrongSignature = errors.New("Wrong token signature")
 )
 
-const (
-	defTokenSecret   = "mainflux-secret"
-	defTokenDuration = "5"
-	defTokenLogLevel = "debug"
-
-	envTokenSecret   = "MF_TOKEN_SECRET"
-	envTokenDuration = "MF_TOKEN_DURATION"
-	envTokenLogLevel = "MF_TOKEN_DEBUG_LEVEL"
-)
-
-var once sync.Once
-
 type tokenizer struct {
 	hmacSampleSecret []byte // secret for signing token
 	tokenDuration    int    // token in duration in min
-	logger           logger.Logger
 }
 
 var t *tokenizer
 
-// Instance - Thread safe creation singleton instance of tokenizer.
-// Used for creating password reset token.
-func Instance() users.Tokenizer {
-	once.Do(func() {
-		t = &tokenizer{}
-		t.hmacSampleSecret = []byte(mainflux.Env(envTokenSecret, defTokenSecret))
-		t.tokenDuration, _ = strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
-
-		logLevel := mainflux.Env(envTokenLogLevel, defTokenLogLevel)
-		l, err := logger.New(os.Stdout, logLevel)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		t.logger = l
-	})
-	return t
+// New creation of tokenizer.
+func New(hmacSampleSecret []byte, tokenDuration int) users.Tokenizer {
+	return &tokenizer{hmacSampleSecret: hmacSampleSecret, tokenDuration: tokenDuration}
 }
 
 func (t *tokenizer) Generate(email string, offset int) (string, error) {
@@ -88,7 +54,6 @@ func (t *tokenizer) Generate(email string, offset int) (string, error) {
 
 	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString(t.hmacSampleSecret)
-	fmt.Println(tokenString)
 	return tokenString, err
 }
 
@@ -98,7 +63,6 @@ func (t *tokenizer) Verify(tok string) (string, error) {
 	token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			t.logger.Error(ErrWrongSignature.Error())
 			return nil, ErrWrongSignature
 		}
 
@@ -107,11 +71,9 @@ func (t *tokenizer) Verify(tok string) (string, error) {
 	})
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if claims.VerifyExpiresAt(time.Now().Unix(), false) == false {
-			t.logger.Error(ErrExpiredToken.Error())
 			return "", ErrExpiredToken
 		}
 		email = claims["email"].(string)
-
 	} else {
 		return email, err
 	}
