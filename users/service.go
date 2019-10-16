@@ -75,7 +75,8 @@ type Service interface {
 	// host is used for generating reset link.
 	GenerateResetToken(_ context.Context, email, host string) error
 
-	// UpdatePassword change users password in reset flow
+	// UpdatePassword change users password in reset flow.
+	// token can be authentication token or password reset token.
 	UpdatePassword(_ context.Context, token, password string) error
 
 	//SendPasswordReset sends reset password link to email
@@ -161,8 +162,17 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 }
 
 func (svc usersService) UpdatePassword(ctx context.Context, token, password string) error {
+	t := token
+	email, err := svc.Identify(token)
+	if err == nil {
+		t, err = svc.token.Generate(email, 0)
 
-	email, err := svc.token.Verify(token)
+		if err != nil {
+			return ErrUnauthorizedAccess
+		}
+	}
+
+	email, err = svc.token.Verify(t)
 	if err != nil {
 		return err
 	}

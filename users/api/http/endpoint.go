@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/mainflux/mainflux/users"
-	"github.com/mainflux/mainflux/users/token"
 )
 
 func registrationEndpoint(svc users.Service) endpoint.Endpoint {
@@ -90,7 +89,6 @@ func userInfoEndpoint(svc users.Service) endpoint.Endpoint {
 func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwChangeReq)
-
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -107,8 +105,7 @@ func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		passwResetToken, err := token.Instance().Generate(u.Email, 0)
-		err = svc.UpdatePassword(ctx, passwResetToken, req.Password)
+		err = svc.UpdatePassword(ctx, req.Token, req.Password)
 		if err != nil {
 			return nil, err
 		}

@@ -10,5 +10,5 @@ import (
 
 // NewTokenizer provides tokenizer for the test
 func NewTokenizer() users.Tokenizer {
-	return token.Instance()
+	return token.New([]byte("secret"), 1)
 }

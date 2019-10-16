@@ -244,6 +244,7 @@ func TestPasswordReset(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
+	tokenizer := token.New([]byte("secret", 1))
 	resData := struct {
 		Msg string `json:"msg"`
 	}{
@@ -261,17 +262,17 @@ func TestPasswordReset(t *testing.T) {
 	expectedNonExUser := toJSON(resData)
 
 	svc.Register(context.Background(), user)
-	tok, _ := token.Instance().Generate(user.Email, 0)
+	tok, _ := tokenizer.Generate(user.Email, 0)
 
 	reqData.Password = user.Password
 	reqData.ConfPass = user.Password
 	reqData.Token = tok
 	reqExisting := toJSON(reqData)
 
-	reqData.Token, _ = token.Instance().Generate("non-existentuser@example.com", 0)
+	reqData.Token, _ = tokenizer.Generate("non-existentuser@example.com", 0)
 
 	reqNoExist := toJSON(reqData)
-	reqData.Token, _ = token.Instance().Generate(user.Email, -5)
+	reqData.Token, _ = tokenizer.Generate(user.Email, -5)
 
 	reqData.ConfPass = "wrong"
 	reqPassNoMatch := toJSON(reqData)
