@@ -78,8 +78,8 @@ type Service interface {
 	// UpdatePassword change users password in reset flow
 	UpdatePassword(_ context.Context, token, password string) error
 
-	//SendToken sends reset password link to email
-	SendToken(_ context.Context, host, email, token string) error
+	//SendPasswordReset sends reset password link to email
+	SendPasswordReset(_ context.Context, host, email, token string) error
 }
 
 var _ Service = (*usersService)(nil)
@@ -157,7 +157,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 	if err != nil {
 		return ErrGeneratingResetToken
 	}
-	return svc.SendToken(ctx, host, email, tok)
+	return svc.SendPasswordReset(ctx, host, email, tok)
 }
 
 func (svc usersService) UpdatePassword(ctx context.Context, token, password string) error {
@@ -179,8 +179,8 @@ func (svc usersService) UpdatePassword(ctx context.Context, token, password stri
 	return svc.users.UpdatePassword(ctx, email, password)
 }
 
-// SendToken sends password recovery link to user
-func (svc usersService) SendToken(_ context.Context, host, email, token string) error {
+// SendPasswordReset sends password recovery link to user
+func (svc usersService) SendPasswordReset(_ context.Context, host, email, token string) error {
 	to := []string{email}
 	return svc.email.SendPasswordReset(to, host, token)
 }

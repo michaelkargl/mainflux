@@ -103,7 +103,7 @@ func (lm *loggingMiddleware) UpdatePassword(ctx context.Context, email, password
 	return lm.svc.UpdatePassword(ctx, email, password)
 }
 
-func (lm *loggingMiddleware) SendToken(ctx context.Context, host, email, token string) (err error) {
+func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email, token string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method send_token for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
@@ -113,5 +113,5 @@ func (lm *loggingMiddleware) SendToken(ctx context.Context, host, email, token s
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendToken(ctx, host, email, token)
+	return lm.svc.SendPasswordReset(ctx, host, email, token)
 }
