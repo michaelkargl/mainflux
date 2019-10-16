@@ -55,7 +55,11 @@ func (idp *jwtIdentityProvider) Identity(key string) (string, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims["sub"].(string), nil
+		sub := claims["sub"]
+		if sub != nil {
+			return sub.(string), nil
+		}
+		return "", users.ErrUnauthorizedAccess
 	}
 
 	return "", users.ErrUnauthorizedAccess

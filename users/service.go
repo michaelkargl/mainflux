@@ -163,7 +163,7 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 
 func (svc usersService) UpdatePassword(ctx context.Context, token, password string) error {
 	t := token
-	email, err := svc.Identify(token)
+	email, err := svc.idp.Identity(token)
 	if err == nil {
 		t, err = svc.token.Generate(email, 0)
 

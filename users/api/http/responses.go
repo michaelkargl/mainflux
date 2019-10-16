@@ -12,7 +12,7 @@ import (
 var (
 	_ mainflux.Response = (*tokenRes)(nil)
 	_ mainflux.Response = (*identityRes)(nil)
-	_ mainflux.Response = (*resetPasswRes)(nil)
+	_ mainflux.Response = (*passwChgRes)(nil)
 )
 
 // MailSent message response when link is sent
@@ -51,18 +51,18 @@ func (res identityRes) Empty() bool {
 	return false
 }
 
-type resetPasswRes struct {
+type passwChgRes struct {
 	Msg string `json:"msg"`
 }
 
-func (res resetPasswRes) Code() int {
+func (res passwChgRes) Code() int {
 	return http.StatusCreated
 }
 
-func (res resetPasswRes) Headers() map[string]string {
+func (res passwChgRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res resetPasswRes) Empty() bool {
+func (res passwChgRes) Empty() bool {
 	return false
 }

@@ -18,6 +18,7 @@ import (
 	log "github.com/mainflux/mainflux/logger"
 	"github.com/mainflux/mainflux/users"
 	httpapi "github.com/mainflux/mainflux/users/api/http"
+	"github.com/mainflux/mainflux/users/jwt"
 	"github.com/mainflux/mainflux/users/mocks"
 	"github.com/mainflux/mainflux/users/token"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -54,9 +55,7 @@ func (tr testRequest) make() (*http.Response, error) {
 		req.Header.Set("Content-Type", tr.contentType)
 	}
 
-	if tr.contentType != "" {
-		req.Header.Set("Referer", "http://localhost")
-	}
+	req.Header.Set("Referer", "http://localhost")
 	return tr.client.Do(req)
 }
 
@@ -126,8 +125,9 @@ func TestLogin(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-
-	tokenData := toJSON(map[string]string{"token": user.Email})
+	j := jwt.New("secret")
+	token, _ := j.TemporaryKey(user.Email)
+	tokenData := toJSON(map[string]string{"token": token})
 	data := toJSON(user)
 	invalidEmailData := toJSON(users.User{
 		Email:    invalidEmail,
@@ -244,7 +244,7 @@ func TestPasswordReset(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
-	tokenizer := token.New([]byte("secret", 1))
+	tokenizer := token.New([]byte("secret"), 1)
 	resData := struct {
 		Msg string `json:"msg"`
 	}{
@@ -319,34 +319,41 @@ func TestPasswordChange(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
+	j := jwt.New("secret")
 	resData := struct {
 		Msg string `json:"msg"`
 	}{
 		"",
 	}
+	expectedSuccess := toJSON(resData)
+
 	reqData := struct {
 		Token    string `json:"token,omitempty"`
 		Password string `json:"password,omitempty"`
-		ConfPass string `json:"confirmPassword,omitempty"`
+		OldPassw string `json:"oldPassword,omitempty"`
 	}{}
-
-	expectedSuccess := toJSON(resData)
-
-	resData.Msg = users.ErrUserNotFound.Error()
+	resData.Msg = users.ErrUnauthorizedAccess.Error()
 	expectedNonExUser := toJSON(resData)
 
 	svc.Register(context.Background(), user)
-	tok, _ := token.Instance().Generate(user.Email, 0)
+	tok, _ := j.TemporaryKey(user.Email)
+	tokNoUser, _ := j.TemporaryKey("non-existentuser@example.com")
 
 	reqData.Password = user.Password
-	reqData.ConfPass = user.Password
+	reqData.OldPassw = user.Password
 	reqData.Token = tok
 	dataResExisting := toJSON(reqData)
 
-	reqData.Token, _ = token.Instance().Generate("non-existentuser@example.com", 0)
+	reqData.Token, _ = j.TemporaryKey(user.Email)
 
 	reqNoExist := toJSON(reqData)
-	reqData.Token, _ = token.Instance().Generate(user.Email, -5)
+	reqData.Token, _ = j.TemporaryKey(user.Email)
+
+	reqData.OldPassw = "wrong"
+	reqWrongPass := toJSON(reqData)
+
+	resData.Msg = users.ErrUnauthorizedAccess.Error()
+	expWronPassRes := toJSON(resData)
 
 	cases := []struct {
 		desc        string
@@ -357,8 +364,8 @@ func TestPasswordChange(t *testing.T) {
 		tok         string
 	}{
 		{"password change with valid token", dataResExisting, contentType, http.StatusCreated, expectedSuccess, tok},
-		{"password change with invalid token", reqNoExist, contentType, http.StatusCreated, expectedNonExUser, tok},
-		{"password change with invalid old password", reqNoExist, contentType, http.StatusCreated, expectedNonExUser, tok},
+		{"password change with invalid token", reqNoExist, contentType, http.StatusCreated, expectedNonExUser, tokNoUser},
+		{"password change with invalid old password", reqWrongPass, contentType, http.StatusCreated, expWronPassRes, tok},
 		{"password change with empty JSON request", "{}", contentType, http.StatusBadRequest, "", tok},
 		{"password change empty request", "", contentType, http.StatusBadRequest, "", tok},
 		{"password change missing content type", dataResExisting, "", http.StatusUnsupportedMediaType, "", tok},
@@ -367,10 +374,11 @@ func TestPasswordChange(t *testing.T) {
 	for _, tc := range cases {
 		req := testRequest{
 			client:      client,
-			method:      http.MethodPut,
-			url:         fmt.Sprintf("%s/password/reset", ts.URL),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/password", ts.URL),
 			contentType: tc.contentType,
 			body:        strings.NewReader(tc.req),
+			token:       tc.tok,
 		}
 
 		res, err := req.make()
