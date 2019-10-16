@@ -39,63 +39,72 @@ import (
 )
 
 const (
-	defLogLevel           = "error"
-	defDBHost             = "localhost"
-	defDBPort             = "5432"
-	defDBUser             = "mainflux"
-	defDBPass             = "mainflux"
-	defDBName             = "users"
-	defDBSSLMode          = "disable"
-	defDBSSLCert          = ""
-	defDBSSLKey           = ""
-	defDBSSLRootCert      = ""
-	defHTTPPort           = "8180"
-	defGRPCPort           = "8181"
-	defSecret             = "users"
-	defServerCert         = ""
-	defServerKey          = ""
-	defJaegerURL          = ""
-	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
-	defEmailLogLevel      = "debug"
-	defEmailDriver        = "smtp"
-	defEmailHost          = "localhost"
-	defEmailPort          = "25"
-	defEmailUsername      = "root"
-	defEmailPassword      = ""
-	defEmailFromAddress   = ""
-	defEmailFromName      = ""
+	defLogLevel      = "error"
+	defDBHost        = "localhost"
+	defDBPort        = "5432"
+	defDBUser        = "mainflux"
+	defDBPass        = "mainflux"
+	defDBName        = "users"
+	defDBSSLMode     = "disable"
+	defDBSSLCert     = ""
+	defDBSSLKey      = ""
+	defDBSSLRootCert = ""
+	defHTTPPort      = "8180"
+	defGRPCPort      = "8181"
+	defSecret        = "users"
+	defServerCert    = ""
+	defServerKey     = ""
+	defJaegerURL     = ""
 
-	envLogLevel           = "MF_USERS_LOG_LEVEL"
-	envDBHost             = "MF_USERS_DB_HOST"
-	envDBPort             = "MF_USERS_DB_PORT"
-	envDBUser             = "MF_USERS_DB_USER"
-	envDBPass             = "MF_USERS_DB_PASS"
-	envDBName             = "MF_USERS_DB"
-	envDBSSLMode          = "MF_USERS_DB_SSL_MODE"
-	envDBSSLCert          = "MF_USERS_DB_SSL_CERT"
-	envDBSSLKey           = "MF_USERS_DB_SSL_KEY"
-	envDBSSLRootCert      = "MF_USERS_DB_SSL_ROOT_CERT"
-	envHTTPPort           = "MF_USERS_HTTP_PORT"
-	envGRPCPort           = "MF_USERS_GRPC_PORT"
-	envSecret             = "MF_USERS_SECRET"
-	envServerCert         = "MF_USERS_SERVER_CERT"
-	envServerKey          = "MF_USERS_SERVER_KEY"
-	envJaegerURL          = "MF_JAEGER_URL"
+	defEmailLogLevel    = "debug"
+	defEmailDriver      = "smtp"
+	defEmailHost        = "localhost"
+	defEmailPort        = "25"
+	defEmailUsername    = "root"
+	defEmailPassword    = ""
+	defEmailFromAddress = ""
+	defEmailFromName    = ""
+
+	defTokenSecret        = "mainflux-secret"
+	defTokenDuration      = "5"
+	defTokenResetEndpoint = "/reset-request" // URL where user lands after click on the reset link from email
+
+	envLogLevel      = "MF_USERS_LOG_LEVEL"
+	envDBHost        = "MF_USERS_DB_HOST"
+	envDBPort        = "MF_USERS_DB_PORT"
+	envDBUser        = "MF_USERS_DB_USER"
+	envDBPass        = "MF_USERS_DB_PASS"
+	envDBName        = "MF_USERS_DB"
+	envDBSSLMode     = "MF_USERS_DB_SSL_MODE"
+	envDBSSLCert     = "MF_USERS_DB_SSL_CERT"
+	envDBSSLKey      = "MF_USERS_DB_SSL_KEY"
+	envDBSSLRootCert = "MF_USERS_DB_SSL_ROOT_CERT"
+	envHTTPPort      = "MF_USERS_HTTP_PORT"
+	envGRPCPort      = "MF_USERS_GRPC_PORT"
+	envSecret        = "MF_USERS_SECRET"
+	envServerCert    = "MF_USERS_SERVER_CERT"
+	envServerKey     = "MF_USERS_SERVER_KEY"
+	envJaegerURL     = "MF_JAEGER_URL"
+
+	envEmailDriver      = "MF_EMAIL_DRIVER"
+	envEmailHost        = "MF_EMAIL_HOST"
+	envEmailPort        = "MF_EMAIL_PORT"
+	envEmailUsername    = "MF_EMAIL_USERNAME"
+	envEmailPassword    = "MF_EMAIL_PASSWORD"
+	envEmailFromAddress = "MF_EMAIL_FROM_ADDRESS"
+	envEmailFromName    = "MF_EMAIL_FROM_NAME"
+	envEmailLogLevel    = "MF_EMAIL_LOG_LEVEL"
+
+	envTokenSecret        = "MF_TOKEN_SECRET"
+	envTokenDuration      = "MF_TOKEN_DURATION"
 	envTokenResetEndpoint = "MF_TOKEN_RESET_ENDPOINT"
-	envEmailDriver        = "MF_EMAIL_DRIVER"
-	envEmailHost          = "MF_EMAIL_HOST"
-	envEmailPort          = "MF_EMAIL_PORT"
-	envEmailUsername      = "MF_EMAIL_USERNAME"
-	envEmailPassword      = "MF_EMAIL_PASSWORD"
-	envEmailFromAddress   = "MF_EMAIL_FROM_ADDRESS"
-	envEmailFromName      = "MF_EMAIL_FROM_NAME"
-	envEmailLogLevel      = "MF_EMAIL_LOG_LEVEL"
 )
 
 type config struct {
 	logLevel   string
 	dbConfig   postgres.Config
 	emailConf  email.Config
+	tokConf    tokConfig
 	httpPort   string
 	grpcPort   string
 	secret     string
@@ -103,6 +112,12 @@ type config struct {
 	serverKey  string
 	jaegerURL  string
 	resetURL   string
+}
+
+
+type tokConfig struct {
+	hmacSampleSecret []byte // secret for signing token
+	tokenDuration    int    // token in duration in min
 }
 
 func main() {
@@ -151,7 +166,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	e := email.Config{
+	emlConf := email.Config{
 		Driver:      mainflux.Env(envEmailDriver, defEmailDriver),
 		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
 		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
@@ -161,10 +176,16 @@ func loadConfig() config {
 		Password:    mainflux.Env(envEmailPassword, defEmailPassword),
 	}
 
+	tokConf := tokConfig {
+		hmacSampleSecret: []byte(mainflux.Env(envTokenSecret, defTokenSecret))
+		tokenDuration: strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
+	}
+
 	return config{
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:   dbConfig,
-		emailConf:  e,
+		emailConf:  emlConf,
+		tokConf: 	tokConf,
 		httpPort:   mainflux.Env(envHTTPPort, defHTTPPort),
 		grpcPort:   mainflux.Env(envGRPCPort, defGRPCPort),
 		secret:     mainflux.Env(envSecret, defSecret),
@@ -209,13 +230,13 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, mc email.Config, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, c config, logger logger.Logger) users.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.UserRepositoryMiddleware(postgres.New(database), tracer)
 	hasher := bcrypt.New()
 	idp := jwt.New(secret)
-	emailer := emailer.New(url, &mc)
-	tokenizer := token.Instance()
+	emailer := emailer.New(url, &c.emailConf)
+	tokenizer := token.New(c.tokConf.hmacSampleSecret, c.tokConf.tokenDuration)
 
 	svc := users.New(repo, hasher, idp, emailer, tokenizer)
 	svc = api.LoggingMiddleware(svc, logger)
