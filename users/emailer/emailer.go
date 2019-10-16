@@ -12,8 +12,9 @@ import (
 
 const (
 	resetPasswEmail = "resetPasswEmail.tmpl"
-	message         = `You have initiated password reset. 
-					  Follow the link below to reset password.`
+	message         = `
+You have initiated password reset.
+Follow the link below to reset password.`
 )
 
 var _ users.Emailer = (*emailer)(nil)
@@ -30,7 +31,7 @@ func New(url string, c *email.Config) users.Emailer {
 }
 
 func (e *emailer) SendPasswordReset(To []string, host string, token string) error {
-	url := fmt.Sprintf("%s/%s?token=%s", host, e.resetURL, token)
+	url := fmt.Sprintf("%s%s?token=%s", host, e.resetURL, token)
 	content := fmt.Sprintf("%s\r\n%s\r\n", message, url)
-	return e.agent.Send(To, "", "", content, "")
+	return e.agent.Send(To, "", "Password reset", "", content, "")
 }
