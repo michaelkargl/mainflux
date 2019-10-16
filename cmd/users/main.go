@@ -152,6 +152,7 @@ func loadConfig() config {
 	}
 
 	e := email.Config{
+		Driver:      mainflux.Env(envEmailDriver, defEmailDriver),
 		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
 		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
 		Host:        mainflux.Env(envEmailHost, defEmailHost),
