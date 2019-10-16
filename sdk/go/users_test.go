@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	httpapi "github.com/mainflux/mainflux/users/api/http"
+	"github.com/mainflux/mainflux/users/jwt"
 
 	"github.com/mainflux/mainflux/users"
 	"github.com/mainflux/mainflux/users/mocks"
@@ -118,6 +119,8 @@ func TestCreateToken(t *testing.T) {
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	user := sdk.User{Email: "user@example.com", Password: "password"}
+	j := jwt.New("secret")
+	token, _ := j.TemporaryKey(user.Email)
 	mainfluxSDK.CreateUser(user)
 	cases := []struct {
 		desc  string
@@ -128,7 +131,7 @@ func TestCreateToken(t *testing.T) {
 		{
 			desc:  "create token for user",
 			user:  user,
-			token: user.Email,
+			token: token,
 			err:   nil,
 		},
 		{
