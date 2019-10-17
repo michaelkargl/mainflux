@@ -66,11 +66,6 @@ func New(c *Config, t *template.Template) *Agent {
 	return a
 }
 
-// Init initializes mailing agent
-func (a *Agent) SetTemplate(t *template.Template) {
-	a.tmpl = t
-}
-
 // Send sends e-mail
 func (a *Agent) Send(To []string, From, Subject, Header, Content, Footer string) error {
 	if a.tmpl == nil {
