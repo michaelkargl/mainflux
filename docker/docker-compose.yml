@@ -64,7 +64,7 @@ services:
       - mainflux-users-db-volume:/var/lib/postgresql/data
 
   users:
-    image: mainflux/users-amd64:latest
+    image: mainflux/users:latest
     container_name: mainflux-users
     volumes:
       - ../configs${MF_EMAIL_TEMPLATE}:${MF_EMAIL_TEMPLATE}
