@@ -86,15 +86,13 @@ func (a *Agent) Send(To []string, From, Subject, Header, Content, Footer string)
 		Content: Content,
 		Footer:  Footer,
 	}
-
 	if From == "" {
 		tmpl.From = a.conf.FromName
 	}
 
-	err := a.tmpl.Execute(email, tmpl)
-	if err != nil {
+	if err := a.tmpl.Execute(email, tmpl); err != nil {
 		return err
 	}
-	err = smtp.SendMail(a.addr, a.auth, a.conf.FromAddress, To, email.Bytes())
-	return err
+
+	return smtp.SendMail(a.addr, a.auth, a.conf.FromAddress, To, email.Bytes())
 }
