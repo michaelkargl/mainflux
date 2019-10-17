@@ -65,7 +65,7 @@ const (
 	defEmailPassword    = ""
 	defEmailFromAddress = ""
 	defEmailFromName    = ""
-	defEmailTemplate    = "../configs/ressetPasswEmail.tmpl"
+	defEmailTemplate    = "../configs/resetPasswEmail.tmpl"
 
 	defTokenSecret        = "mainflux-secret"
 	defTokenDuration      = "5"
