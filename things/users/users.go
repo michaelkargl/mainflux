@@ -9,8 +9,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/mainflux/mainflux"
 	"github.com/mainflux/mainflux/things"
+
+	"github.com/mainflux/mainflux"
 	"google.golang.org/grpc"
 )
 
