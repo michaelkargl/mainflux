@@ -238,7 +238,10 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, c config, logger logger.
 	repo := tracing.UserRepositoryMiddleware(postgres.New(database), tracer)
 	hasher := bcrypt.New()
 	idp := jwt.New(c.secret)
-	emailer := emailer.New(c.resetURL, &c.emailConf)
+	emailer, err := emailer.New(c.resetURL, &c.emailConf)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to configure e-mailing util: %s", err.Error()))
+	}
 	tDur, err := strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
 	if err != nil {
 		logger.Error(err.Error())

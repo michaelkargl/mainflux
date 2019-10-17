@@ -23,8 +23,12 @@ type emailer struct {
 }
 
 // New creates new emailer utility
-func New(url string, c *email.Config) users.Emailer {
-	return &emailer{resetURL: url, agent: email.New(c, nil)}
+func New(url string, c *email.Config) (users.Emailer, error) {
+	e, err := email.New(c, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &emailer{resetURL: url, agent: e}, nil
 }
 
 func (e *emailer) SendPasswordReset(To []string, host string, token string) error {

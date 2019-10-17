@@ -49,7 +49,7 @@ type Agent struct {
 }
 
 // New creates new email agent
-func New(c *Config, t *template.Template) *Agent {
+func New(c *Config, t *template.Template) (*Agent, error) {
 	a := &Agent{}
 	a.conf = c
 
@@ -58,12 +58,15 @@ func New(c *Config, t *template.Template) *Agent {
 	a.addr = fmt.Sprintf("%s:%s", c.Host, c.Port)
 	if t != nil {
 		a.tmpl = t
-		return a
+		return a, nil
 	}
 
-	tmpl, _ := template.ParseFiles(c.Template)
+	tmpl, err := template.ParseFiles(c.Template)
+	if err != nil {
+		return nil, err
+	}
 	a.tmpl = tmpl
-	return a
+	return a, nil
 }
 
 // Send sends e-mail
