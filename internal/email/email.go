@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	// ErrMissingEmailTmpl missing email template file
-	ErrMissingEmailTmpl = errors.New("Missing email template file")
+	// ErrMissingEmailTemplate missing email template file
+	ErrMissingEmailTemplate = errors.New("Missing e-mail template file")
 )
 
 type emailTemplate struct {

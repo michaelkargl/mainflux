@@ -107,7 +107,7 @@ type config struct {
 	logLevel   string
 	dbConfig   postgres.Config
 	emailConf  email.Config
-	tokConf    tokConfig
+	tokenConf  tokenConfig
 	httpPort   string
 	grpcPort   string
 	secret     string
@@ -117,7 +117,7 @@ type config struct {
 	resetURL   string
 }
 
-type tokConfig struct {
+type tokenConfig struct {
 	hmacSampleSecret []byte // secret for signing token
 	tokenDuration    string // token in duration in min
 }
@@ -139,7 +139,7 @@ func main() {
 	dbTracer, dbCloser := initJaeger("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, cfg.secret, cfg.resetURL, cfg, logger)
+	svc := newService(db, dbTracer, cfg, logger)
 	errs := make(chan error, 2)
 
 	go startHTTPServer(tracer, svc, cfg.httpPort, cfg.serverCert, cfg.serverKey, logger, errs)
@@ -168,7 +168,7 @@ func loadConfig() config {
 		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
 	}
 
-	emlConf := email.Config{
+	emailConf := email.Config{
 		Driver:      mainflux.Env(envEmailDriver, defEmailDriver),
 		FromAddress: mainflux.Env(envEmailFromAddress, defEmailFromAddress),
 		FromName:    mainflux.Env(envEmailFromName, defEmailFromName),
@@ -179,7 +179,7 @@ func loadConfig() config {
 		Template:    mainflux.Env(envEmailTemplate, defEmailTemplate),
 	}
 
-	tokConf := tokConfig{
+	tokenConf := tokenConfig{
 		hmacSampleSecret: []byte(mainflux.Env(envTokenSecret, defTokenSecret)),
 		tokenDuration:    mainflux.Env(envTokenDuration, defTokenDuration),
 	}
@@ -187,8 +187,8 @@ func loadConfig() config {
 	return config{
 		logLevel:   mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:   dbConfig,
-		emailConf:  emlConf,
-		tokConf:    tokConf,
+		emailConf:  emailConf,
+		tokenConf:  tokenConf,
 		httpPort:   mainflux.Env(envHTTPPort, defHTTPPort),
 		grpcPort:   mainflux.Env(envGRPCPort, defGRPCPort),
 		secret:     mainflux.Env(envSecret, defSecret),
@@ -233,12 +233,12 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, secret, url string, c config, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, c config, logger logger.Logger) users.Service {
 	database := postgres.NewDatabase(db)
 	repo := tracing.UserRepositoryMiddleware(postgres.New(database), tracer)
 	hasher := bcrypt.New()
-	idp := jwt.New(secret)
-	emailer := emailer.New(url, &c.emailConf)
+	idp := jwt.New(c.secret)
+	emailer := emailer.New(c.resetURL, &c.emailConf)
 	tDur, err := strconv.Atoi(mainflux.Env(envTokenDuration, defTokenDuration))
 	if err != nil {
 		logger.Error(err.Error())
