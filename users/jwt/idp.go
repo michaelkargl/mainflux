@@ -59,7 +59,6 @@ func (idp *jwtIdentityProvider) Identity(key string) (string, error) {
 		if sub != nil {
 			return sub.(string), nil
 		}
-		return "", users.ErrUnauthorizedAccess
 	}
 
 	return "", users.ErrUnauthorizedAccess

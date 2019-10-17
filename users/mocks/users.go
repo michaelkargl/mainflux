@@ -13,16 +13,14 @@ import (
 var _ users.UserRepository = (*userRepositoryMock)(nil)
 
 type userRepositoryMock struct {
-	mu     sync.Mutex
-	users  map[string]users.User
-	tokens map[string]string
+	mu    sync.Mutex
+	users map[string]users.User
 }
 
 // NewUserRepository creates in-memory user repository
 func NewUserRepository() users.UserRepository {
 	return &userRepositoryMock{
-		users:  make(map[string]users.User),
-		tokens: make(map[string]string),
+		users: make(map[string]users.User),
 	}
 }
 

@@ -36,7 +36,7 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		res := passwChgRes{}
+		res := passwChangeRes{}
 		email := req.Email
 		err := svc.GenerateResetToken(ctx, email, req.Host)
 		if err != nil {
@@ -58,7 +58,7 @@ func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		res := passwChgRes{}
+		res := passwChangeRes{}
 
 		if err := svc.UpdatePassword(ctx, req.Token, req.Password); err != nil {
 			res.Msg = err.Error()
@@ -92,7 +92,7 @@ func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		res := passwChgRes{}
+		res := passwChangeRes{}
 
 		u, err := svc.UserInfo(ctx, req.Token)
 		if err != nil {

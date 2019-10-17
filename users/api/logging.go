@@ -105,7 +105,7 @@ func (lm *loggingMiddleware) UpdatePassword(ctx context.Context, email, password
 
 func (lm *loggingMiddleware) SendPasswordReset(ctx context.Context, host, email, token string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_token for user %s took %s to complete", email, time.Since(begin))
+		message := fmt.Sprintf("Method send_password_reset for user %s took %s to complete", email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
