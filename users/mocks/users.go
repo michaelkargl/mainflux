@@ -48,11 +48,11 @@ func (urm *userRepositoryMock) RetrieveByID(ctx context.Context, email string) (
 	return val, nil
 }
 
-func (urm *userRepositoryMock) UpdatePassword(_ context.Context, email, password string) error {
+func (urm *userRepositoryMock) UpdatePassword(_ context.Context, token, password string) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
-	_, ok := urm.users[email]
-	if !ok {
+
+	if _, ok := urm.users[token]; !ok {
 		return users.ErrNotFound
 	}
 	return nil

@@ -30,7 +30,7 @@ func (req viewUserInfoReq) validate() error {
 
 type passwResetReq struct {
 	Email string `json:"email"`
-	Host  string `json:"host,omitempty"`
+	Host  string `json:"host"`
 }
 
 func (req passwResetReq) validate() error {
@@ -41,9 +41,9 @@ func (req passwResetReq) validate() error {
 }
 
 type resetTokenReq struct {
-	Token    string `json:"token,omitempty"`
-	Password string `json:"password,omitempty"`
-	ConfPass string `json:"confirmPassword,omitempty"`
+	Token    string `json:"token"`
+	Password string `json:"password"`
+	ConfPass string `json:"confirmPassword"`
 }
 
 func (req resetTokenReq) validate() error {
@@ -60,9 +60,9 @@ func (req resetTokenReq) validate() error {
 }
 
 type passwChangeReq struct {
-	Token       string `json:"token,omitempty"`
-	Password    string `json:"password,omitempty"`
-	OldPassword string `json:"oldPassword,omitempty"`
+	Token       string `json:"token"`
+	Password    string `json:"password"`
+	OldPassword string `json:"oldPassword"`
 }
 
 func (req passwChangeReq) validate() error {

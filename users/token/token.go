@@ -29,8 +29,6 @@ type tokenizer struct {
 	tokenDuration    int    // token in duration in min
 }
 
-var t *tokenizer
-
 // New creation of tokenizer.
 func New(hmacSampleSecret []byte, tokenDuration int) users.Tokenizer {
 	return &tokenizer{hmacSampleSecret: hmacSampleSecret, tokenDuration: tokenDuration}
@@ -69,13 +67,16 @@ func (t *tokenizer) Verify(tok string) (string, error) {
 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
 		return t.hmacSampleSecret, nil
 	})
+
+	if err != nil {
+		return email, err
+	}
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if claims.VerifyExpiresAt(time.Now().Unix(), false) == false {
 			return "", ErrExpiredToken
 		}
 		email = claims["email"].(string)
-	} else {
-		return email, err
 	}
 	return email, nil
 }

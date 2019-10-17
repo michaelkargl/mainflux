@@ -17,6 +17,7 @@ const (
 	retrieveByIDOp     = "retrieve_by_id"
 	generateResetToken = "generate_reset_token"
 	updatePassword     = "update_password"
+	sendPasswordReset  = "send_reset_password"
 )
 
 var _ users.UserRepository = (*userRepositoryMiddleware)(nil)

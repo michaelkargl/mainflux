@@ -13,12 +13,12 @@ var (
 	// registration.
 	ErrConflict = errors.New("email already taken")
 
-	// ErrMalformedEntity indicates malformed entity specification (e.g.
-	// invalid username or password)
+	// ErrMalformedEntity indicates malformed entity specification
+	// (e.g. invalid username or password).
 	ErrMalformedEntity = errors.New("malformed entity specification")
 
 	// ErrUnauthorizedAccess indicates missing or invalid credentials provided
-	// when accessing a protected resource
+	// when accessing a protected resource.
 	ErrUnauthorizedAccess = errors.New("missing or invalid credentials provided")
 
 	// ErrNotFound indicates a non-existent entity request
