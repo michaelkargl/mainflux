@@ -74,7 +74,7 @@ func (a *Agent) SetTemplate(t *template.Template) {
 // Send sends e-mail
 func (a *Agent) Send(To []string, From, Subject, Header, Content, Footer string) error {
 	if a.tmpl == nil {
-		return ErrMissingEmailTmpl
+		return ErrMissingEmailTemplate
 	}
 
 	email := new(bytes.Buffer)

@@ -243,7 +243,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, c config, logger logger.
 	if err != nil {
 		logger.Error(err.Error())
 	}
-	tokenizer := token.New(c.tokConf.hmacSampleSecret, tDur)
+	tokenizer := token.New(c.tokenConf.hmacSampleSecret, tDur)
 
 	svc := users.New(repo, hasher, idp, emailer, tokenizer)
 	svc = api.LoggingMiddleware(svc, logger)
