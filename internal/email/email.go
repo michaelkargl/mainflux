@@ -49,17 +49,11 @@ type Agent struct {
 }
 
 // New creates new email agent
-func New(c *Config, t *template.Template) (*Agent, error) {
+func New(c *Config) (*Agent, error) {
 	a := &Agent{}
 	a.conf = c
-
-	// Set up authentication information
 	a.auth = smtp.PlainAuth("", c.Username, c.Password, c.Host)
 	a.addr = fmt.Sprintf("%s:%s", c.Host, c.Port)
-	if t != nil {
-		a.tmpl = t
-		return a, nil
-	}
 
 	tmpl, err := template.ParseFiles(c.Template)
 	if err != nil {

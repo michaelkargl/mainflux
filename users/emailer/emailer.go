@@ -24,7 +24,7 @@ type emailer struct {
 
 // New creates new emailer utility
 func New(url string, c *email.Config) (users.Emailer, error) {
-	e, err := email.New(c, nil)
+	e, err := email.New(c)
 	if err != nil {
 		return nil, err
 	}

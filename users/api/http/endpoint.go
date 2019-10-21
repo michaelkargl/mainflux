@@ -60,7 +60,7 @@ func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 		res := passwChangeRes{}
 
-		if err := svc.UpdatePassword(ctx, req.Token, req.Password); err != nil {
+		if err := svc.ResetPassword(ctx, req.Token, req.Password); err != nil {
 			res.Msg = err.Error()
 			return res, nil
 		}
@@ -94,19 +94,7 @@ func passwordChangeEndpoint(svc users.Service) endpoint.Endpoint {
 		}
 		res := passwChangeRes{}
 
-		u, err := svc.UserInfo(ctx, req.Token)
-		if err != nil {
-			res.Msg = err.Error()
-			return res, nil
-		}
-
-		u.Password = req.OldPassword
-		if _, err = svc.Login(ctx, u); err != nil {
-			res.Msg = err.Error()
-			return res, nil
-		}
-
-		if err = svc.UpdatePassword(ctx, req.Token, req.Password); err != nil {
+		if err := svc.ChangePassword(ctx, req.Token, req.Password, req.OldPassword); err != nil {
 			res.Msg = err.Error()
 			return res, nil
 		}

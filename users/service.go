@@ -75,9 +75,12 @@ type Service interface {
 	// host is used for generating reset link.
 	GenerateResetToken(_ context.Context, email, host string) error
 
-	// UpdatePassword change users password in reset flow.
+	// ChangePassword change users password for authenticated user.
+	ChangePassword(_ context.Context, authToken, password, oldPassword string) error
+
+	// ResetPassword change users password in reset flow.
 	// token can be authentication token or password reset token.
-	UpdatePassword(_ context.Context, token, password string) error
+	ResetPassword(_ context.Context, resetToken, password string) error
 
 	//SendPasswordReset sends reset password link to email
 	SendPasswordReset(_ context.Context, host, email, token string) error
@@ -161,23 +164,40 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, host stri
 	return svc.SendPasswordReset(ctx, host, email, tok)
 }
 
-func (svc usersService) UpdatePassword(ctx context.Context, token, password string) error {
-	t := token
-	email, err := svc.idp.Identity(token)
-	if err == nil {
-		t, err = svc.token.Generate(email, 0)
-
-		if err != nil {
-			return ErrUnauthorizedAccess
-		}
-	}
-
-	email, err = svc.token.Verify(t)
+func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {
+	email, err := svc.token.Verify(resetToken)
 	if err != nil {
 		return err
 	}
 
 	u, err := svc.users.RetrieveByID(ctx, email)
+	if err != nil || u.Email == "" {
+		return ErrUserNotFound
+	}
+
+	password, err = svc.hasher.Hash(password)
+	if err != nil {
+		return err
+	}
+	return svc.users.UpdatePassword(ctx, email, password)
+}
+
+func (svc usersService) ChangePassword(ctx context.Context, authToken, password, oldPassword string) error {
+
+	email, err := svc.idp.Identity(authToken)
+	if err != nil {
+		return ErrUnauthorizedAccess
+	}
+
+	u := User{
+		Email:    email,
+		Password: oldPassword,
+	}
+	if _, err = svc.Login(ctx, u); err != nil {
+		return ErrUnauthorizedAccess
+	}
+
+	u, err = svc.users.RetrieveByID(ctx, email)
 	if err != nil || u.Email == "" {
 		return ErrUserNotFound
 	}
