@@ -183,7 +183,6 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, authToken, password, oldPassword string) error {
-
 	email, err := svc.idp.Identity(authToken)
 	if err != nil {
 		return ErrUnauthorizedAccess
