@@ -23,11 +23,16 @@ func registrationEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-// Password reset request endpoint serves post request with email of the user
-// for whom password reset flow is to be initiated.
-// If request is successful email with reset link will be sent to the
-// email specified in the request where link is configured using MF_TOKEN_RESET_ENDPOINT.
-// Link generate contains token that needs to be verified.
+// Password reset request endpoint.
+// When successful password reset link is generated.
+// Link is generated using MF_TOKEN_RESET_ENDPOINT env.
+// and value from Referer header for host.
+// {Referer}+{MF_TOKEN_RESET_ENDPOINT}+{token=TOKEN}
+// http://mainflux.com/reset-request?token=xxxxxxxxxxx.
+// Email with a link is being sent to the user.
+// When user clicks on a link it should get the ui with form to
+// enter new password, when form is submitted token and new password
+// must be sent as PUT request to 'password/reset' passwordResetEndpoint
 func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(passwResetReq)
@@ -48,10 +53,9 @@ func passwordResetRequestEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-// This is post request endpoint that actually sets new password.
-// When user clicks on a link in the email he lands on UI page ( configured with MF_TOKEN_RESET_ENDPOINT )
-// UI should have form that accepts new password and confirm password.
-// When the form is submitted it will make PUT request to this endpoint.
+// This is endpoint that actually sets new password in password reset flow.
+// When user clicks on a link in email finally ends on this endpoint as explained in
+// the comment above.
 func passwordResetEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(resetTokenReq)
