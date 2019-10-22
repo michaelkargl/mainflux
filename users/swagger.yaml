@@ -229,15 +229,18 @@ definitions:
       password:
         type: string
         description: New password
+      confirm_password:
+        type: string
+        description: New password confirmed
       token:
         type: string
-        description: Reset token generated and sent in email.s
+        description: Reset token generated and sent in email
   PasswordChange:
     type: object
     properties:
       password:
         type: string
         description: New password
-      confirmPassword:
+      old_password:
         type: string
         description: Confirm password

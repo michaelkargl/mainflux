@@ -330,7 +330,7 @@ func TestPasswordChange(t *testing.T) {
 	reqData := struct {
 		Token    string `json:"token,omitempty"`
 		Password string `json:"password,omitempty"`
-		OldPassw string `json:"oldPassword,omitempty"`
+		OldPassw string `json:"old_password,omitempty"`
 	}{}
 	resData.Msg = users.ErrUnauthorizedAccess.Error()
 	expectedNonExUser := toJSON(resData)

@@ -43,7 +43,7 @@ func (req passwResetReq) validate() error {
 type resetTokenReq struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`
-	ConfPass string `json:"confirmPassword"`
+	ConfPass string `json:"confirm_password"`
 }
 
 func (req resetTokenReq) validate() error {
@@ -62,7 +62,7 @@ func (req resetTokenReq) validate() error {
 type passwChangeReq struct {
 	Token       string `json:"token"`
 	Password    string `json:"password"`
-	OldPassword string `json:"oldPassword"`
+	OldPassword string `json:"old_password"`
 }
 
 func (req passwChangeReq) validate() error {
