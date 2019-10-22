@@ -33,15 +33,6 @@ var (
 	// ErrMissingEmail indicates missing email for password reset request
 	ErrMissingEmail = errors.New("missing email for password reset")
 
-	// ErrSavingRecoveryToken indicates error saving recovery token
-	ErrSavingRecoveryToken = errors.New("error saving recovery token")
-
-	// ErrDeletingRecoveryToken indicates error deleting recovery token
-	ErrDeletingRecoveryToken = errors.New("error deleting recovery token")
-
-	// ErrRetrievingRecoveryToken indicates error deleting recovery token
-	ErrRetrievingRecoveryToken = errors.New("error deleting recovery token")
-
 	// ErrMissingResetToken indicates malformed or missing reset token
 	// for reseting password
 	ErrMissingResetToken = errors.New("error missing reset token")
