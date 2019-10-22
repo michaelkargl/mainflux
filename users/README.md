@@ -39,12 +39,12 @@ default values.
 | MF_EMAIL_PORT             | Mail server port                                                        | 25             |
 | MF_EMAIL_USERNAME         | Mail server username                                                    |                |
 | MF_EMAIL_PASSWORD         | Mail server password                                                    |                |
-| MF_EMAIL_FROM_ADDRESS     | Email "from" address                                                     |                |
-| MF_EMAIL_FROM_NAME        | Email "from" name                                                        |                |
+| MF_EMAIL_FROM_ADDRESS     | Email "from" address                                                    |                |
+| MF_EMAIL_FROM_NAME        | Email "from" name                                                       |                |
 | MF_TOKEN_SECRET           | Token secret for signing token used for password reset                  |                |
 | MF_TOKEN_DURATION         | Token duration in minutes                                               | 5              |
 | MF_TOKEN_DEBUG_LEVEL      | Token util debug level                                                  | info           |
-| MF_TOKEN_RESET_ENDPOINT   | Password request reset endpoint, for constructing link                  | /password/reset|
+| MF_TOKEN_RESET_ENDPOINT   | Password request reset endpoint, for constructing link                  | /reset-request |
 
 ## Deployment
 
