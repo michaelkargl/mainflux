@@ -253,7 +253,7 @@ func TestPasswordReset(t *testing.T) {
 	reqData := struct {
 		Token    string `json:"token,omitempty"`
 		Password string `json:"password,omitempty"`
-		ConfPass string `json:"confirmPassword,omitempty"`
+		ConfPass string `json:"confirm_password,omitempty"`
 	}{}
 
 	expectedSuccess := toJSON(resData)
