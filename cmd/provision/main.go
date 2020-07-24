@@ -172,10 +172,8 @@ func loadConfig() (provision.Config, error) {
 	}
 
 	var content map[string]interface{}
-	c := mainflux.Env(envBSContent, defBSContent)
-	if c != "" {
-		err = json.Unmarshal([]byte(c), content)
-		if err != nil {
+	if c := mainflux.Env(envBSContent, defBSContent); c != "" {
+		if err = json.Unmarshal([]byte(c), content); err != nil {
 			return provision.Config{}, errFailedToReadBootstrapContent
 		}
 	}

@@ -157,8 +157,6 @@ func (ps *provisionService) Provision(token, name, externalID, externalKey strin
 	for _, thing := range things {
 		var chanIDs []string
 
-		bootstrap := needsBootstrap(thing)
-
 		for _, ch := range channels {
 			chanIDs = append(chanIDs, ch.ID)
 		}
@@ -166,9 +164,8 @@ func (ps *provisionService) Provision(token, name, externalID, externalKey strin
 		if err != nil {
 			return Result{}, errors.Wrap(ErrFailedBootstrap, err)
 		}
-		fmt.Println("content:" + string(content))
 
-		if ps.conf.Bootstrap.Provision && bootstrap {
+		if ps.conf.Bootstrap.Provision && needsBootstrap(thing) {
 			bsReq := SDK.BootstrapConfig{
 				ThingID:     thing.ID,
 				ExternalID:  externalID,
@@ -203,7 +200,7 @@ func (ps *provisionService) Provision(token, name, externalID, externalKey strin
 			res.ClientKey[thing.ID] = cert.ClientKey
 			res.CACert = cert.CACert
 
-			if bootstrap {
+			if needsBootstrap(thing) {
 				if err = ps.sdk.UpdateBootstrapCerts(token, bsConfig.MFThing, cert.ClientCert, cert.ClientKey, cert.CACert); err != nil {
 					return Result{}, errors.Wrap(ErrFailedCertCreation, err)
 				}
