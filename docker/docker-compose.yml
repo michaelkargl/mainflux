@@ -184,3 +184,88 @@ services:
       - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
     networks:
       - mainflux-base-net
+
+  authn-db:
+    image: arm32v7/postgres
+    container_name: mainflux-authn-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_AUTHN_DB_USER}
+      POSTGRES_PASSWORD: ${MF_AUTHN_DB_PASS}
+      POSTGRES_DB: ${MF_AUTHN_DB}
+    networks:
+      - mainflux-base-net
+    volumes:
+      - mainflux-authn-db-volume:/var/lib/postgresql/data
+
+  authn:
+    image: arm32v7/mainflux/authn:latest
+    container_name: mainflux-authn
+    depends_on:
+      - authn-db
+    expose:
+      - ${MF_AUTHN_GRPC_PORT}
+    restart: on-failure
+    environment:
+      MF_AUTHN_LOG_LEVEL: ${MF_AUTHN_LOG_LEVEL}
+      MF_AUTHN_DB_HOST: authn-db
+      MF_AUTHN_DB_PORT: ${MF_AUTHN_DB_PORT}
+      MF_AUTHN_DB_USER: ${MF_AUTHN_DB_USER}
+      MF_AUTHN_DB_PASS: ${MF_AUTHN_DB_PASS}
+      MF_AUTHN_DB: ${MF_AUTHN_DB}
+      MF_AUTHN_HTTP_PORT: ${MF_AUTHN_HTTP_PORT}
+      MF_AUTHN_GRPC_PORT: ${MF_AUTHN_GRPC_PORT}
+      MF_AUTHN_SECRET: ${MF_AUTHN_SECRET}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+    ports:
+      - ${MF_AUTHN_HTTP_PORT}:${MF_AUTHN_HTTP_PORT}
+      - ${MF_AUTHN_GRPC_PORT}:${MF_AUTHN_GRPC_PORT}
+    networks:
+      - mainflux-base-net
+
+  users-db:
+    image: arm32v7/postgres
+    container_name: mainflux-users-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_USERS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_USERS_DB_PASS}
+      POSTGRES_DB: ${MF_USERS_DB}
+    networks:
+      - mainflux-base-net
+    volumes:
+      - mainflux-users-db-volume:/var/lib/postgresql/data
+
+  users:
+    image: arm32v7/mainflux/users:latest
+    container_name: mainflux-users
+    volumes:
+      - ./users/emailer/templates/${MF_EMAIL_TEMPLATE}:/${MF_EMAIL_TEMPLATE}
+    depends_on:
+      - users-db
+      - authn
+    restart: on-failure
+    environment:
+      MF_USERS_LOG_LEVEL: ${MF_USERS_LOG_LEVEL}
+      MF_USERS_DB_HOST: users-db
+      MF_USERS_DB_PORT: ${MF_USERS_DB_PORT}
+      MF_USERS_DB_USER: ${MF_USERS_DB_USER}
+      MF_USERS_DB_PASS: ${MF_USERS_DB_PASS}
+      MF_USERS_DB: ${MF_USERS_DB}
+      MF_USERS_HTTP_PORT: ${MF_USERS_HTTP_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_EMAIL_DRIVER: ${MF_EMAIL_DRIVER}
+      MF_EMAIL_HOST: ${MF_EMAIL_HOST}
+      MF_EMAIL_PORT: ${MF_EMAIL_PORT}
+      MF_EMAIL_USERNAME: ${MF_EMAIL_USERNAME}
+      MF_EMAIL_PASSWORD: ${MF_EMAIL_PASSWORD}
+      MF_EMAIL_FROM_ADDRESS: ${MF_EMAIL_FROM_ADDRESS}
+      MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
+      MF_EMAIL_TEMPLATE: ${MF_EMAIL_TEMPLATE}
+      MF_TOKEN_RESET_ENDPOINT: ${MF_TOKEN_RESET_ENDPOINT}
+      MF_AUTHN_GRPC_URL: ${MF_AUTHN_GRPC_URL}
+      MF_AUTHN_GRPC_TIMEOUT: ${MF_AUTHN_GRPC_TIMEOUT}
+    ports:
+      - ${MF_USERS_HTTP_PORT}:${MF_USERS_HTTP_PORT}
+    networks:
+      - mainflux-base-net
