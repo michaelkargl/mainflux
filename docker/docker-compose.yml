@@ -19,6 +19,35 @@ volumes:
 
 services:
 
+  nginx:
+    image: nginx:1.16.0
+    container_name: mainflux-nginx
+    restart: on-failure
+    volumes:
+      - ./nginx/nginx-${AUTH-key}.conf:/etc/nginx/nginx.conf.template
+      - ./nginx/entrypoint.sh:/entrypoint.sh
+      - ./nginx/snippets:/etc/nginx/snippets
+      - ./ssl/authorization.js:/etc/nginx/authorization.js
+      - ./ssl/certs/mainflux-server.crt:/etc/ssl/certs/mainflux-server.crt
+      - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt
+      - ./ssl/certs/mainflux-server.key:/etc/ssl/private/mainflux-server.key
+      - ./ssl/dhparam.pem:/etc/ssl/certs/dhparam.pem
+    ports:
+      - ${MF_NGINX_HTTP_PORT}:${MF_NGINX_HTTP_PORT}
+      - ${MF_NGINX_SSL_PORT}:${MF_NGINX_SSL_PORT}
+      - ${MF_NGINX_MQTT_PORT}:${MF_NGINX_MQTT_PORT}
+      - ${MF_NGINX_MQTTS_PORT}:${MF_NGINX_MQTTS_PORT}
+    networks:
+      - mainflux-base-net
+    env_file:
+      - ../.env
+    command: /entrypoint.sh
+    depends_on:
+      - things
+      - users
+      - mqtt-adapter
+      - http-adapter
+
   nats:
     image: arm32v7/nats:1.3.0
     container_name: mainflux-nats
