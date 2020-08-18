@@ -166,3 +166,21 @@ services:
     volumes:
       - mainflux-es-redis-volume:/data
 
+  http-adapter:
+    image: arm32v7/mainflux/http:latest
+    container_name: mainflux-http
+    depends_on:
+      - things
+      - nats
+    restart: on-failure
+    environment:
+      MF_HTTP_ADAPTER_LOG_LEVEL: debug
+      MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
+      MF_NATS_URL: ${MF_NATS_URL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_HTTP_ADAPTER_PORT}:${MF_HTTP_ADAPTER_PORT}
+    networks:
+      - mainflux-base-net
