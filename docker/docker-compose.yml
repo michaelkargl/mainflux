@@ -12,9 +12,10 @@ volumes:
   mainflux-auth-redis-volume:
   mainflux-es-redis-volume:
   mainflux-mqtt-broker-volume:
-  mainflux-mosquitto-data:
-  mainflux-mosquitto-log:
   mainflux-influxdb-volume:
+  vol-emqx-data:
+  vol-emqx-etc:
+  vol-emqx-log:
   
 
 services:
@@ -31,15 +32,18 @@ services:
     ports:
       - 4222:4222
 
-  mosquitto:
-    image: arm32v6/eclipse-mosquitto
-    container_name: mainflux-mosquitto
+  mqtt-broker:
+    image: emqx/emqx:4.2.7
+    container_name: mainflux-mqtt-broker
     restart: on-failure
     networks:
       - mainflux-base-net
     volumes:
-      - mainflux-mosquitto-data:/mosquitto/data
-      - mainflux-mosquitto-log:/mosquitto/log
+      - vol-emqx-data:/opt/emqx/data
+      - vol-emqx-etc:/opt/emqx/etc
+      - vol-emqx-log:/opt/emqx/log
+    ports:
+      - 18083:18083
 
   things-db:
     image: arm32v7/postgres
@@ -64,7 +68,7 @@ services:
       - mainflux-auth-redis-volume:/data
 
   things:
-    image: arm32v7/mainflux/things:latest
+    image: armv7/mainflux/things:latest
     container_name: mainflux-things
     restart: on-failure
     environment:
@@ -93,10 +97,10 @@ services:
 
 
   mqtt-adapter:
-    image: arm32v7/mainflux/mqtt:latest
+    image: armv7/mainflux/mqtt:latest
     container_name: mainflux-mqtt
     depends_on:
-      - mosquitto
+      - mqtt-broker
       - things
       - nats
     restart: on-failure
@@ -106,9 +110,9 @@ services:
       MF_MQTT_ADAPTER_WS_PORT: ${MF_MQTT_ADAPTER_WS_PORT}
       MF_MQTT_ADAPTER_ES_URL: es-redis:${MF_REDIS_TCP_PORT}
       MF_NATS_URL: ${MF_NATS_URL}
-      MF_MQTT_ADAPTER_MQTT_TARGET_HOST: mosquitto
+      MF_MQTT_ADAPTER_MQTT_TARGET_HOST: mqtt-broker
       MF_MQTT_ADAPTER_MQTT_TARGET_PORT: ${MF_MQTT_BROKER_PORT}
-      MF_MQTT_ADAPTER_WS_TARGET_HOST: mosquitto
+      MF_MQTT_ADAPTER_WS_TARGET_HOST: mqtt-broker
       MF_MQTT_ADAPTER_WS_TARGET_PORT: ${MF_MQTT_BROKER_WS_PORT}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
@@ -134,7 +138,7 @@ services:
       - mainflux-influxdb-volume:/var/lib/influxdb
 
   influxdb-writer:
-    image: arm32v7/mainflux/influxdb-writer:latest
+    image: armv7/mainflux/influxdb-writer:latest
     container_name: mainflux-influxdb-writer
     depends_on:
       - influxdb
